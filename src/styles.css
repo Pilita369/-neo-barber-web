@@ -1,0 +1,119 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --font-display: "Bebas Neue", "Archivo", sans-serif;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --radius: 0.75rem;
+  /* Neo Barbería: negro / fucsia / dorado */
+  --background: oklch(0.13 0.005 285);
+  --foreground: oklch(0.96 0.005 285);
+  --card: oklch(0.175 0.008 285);
+  --card-foreground: oklch(0.96 0.005 285);
+  --popover: oklch(0.19 0.008 285);
+  --popover-foreground: oklch(0.96 0.005 285);
+  --primary: oklch(0.62 0.24 350);
+  --primary-foreground: oklch(0.99 0.005 350);
+  --secondary: oklch(0.22 0.01 285);
+  --secondary-foreground: oklch(0.96 0.005 285);
+  --muted: oklch(0.22 0.01 285);
+  --muted-foreground: oklch(0.68 0.015 285);
+  --accent: oklch(0.24 0.03 350);
+  --accent-foreground: oklch(0.97 0.01 350);
+  --destructive: oklch(0.62 0.21 25);
+  --destructive-foreground: oklch(0.99 0.005 25);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.62 0.24 350);
+  --gold: oklch(0.79 0.13 88);
+  --gold-foreground: oklch(0.18 0.03 88);
+}
+
+.dark {
+  --background: oklch(0.13 0.005 285);
+  --foreground: oklch(0.96 0.005 285);
+  --card: oklch(0.175 0.008 285);
+  --card-foreground: oklch(0.96 0.005 285);
+  --popover: oklch(0.19 0.008 285);
+  --popover-foreground: oklch(0.96 0.005 285);
+  --primary: oklch(0.62 0.24 350);
+  --primary-foreground: oklch(0.99 0.005 350);
+  --secondary: oklch(0.22 0.01 285);
+  --secondary-foreground: oklch(0.96 0.005 285);
+  --muted: oklch(0.22 0.01 285);
+  --muted-foreground: oklch(0.68 0.015 285);
+  --accent: oklch(0.24 0.03 350);
+  --accent-foreground: oklch(0.97 0.01 350);
+  --destructive: oklch(0.62 0.21 25);
+  --destructive-foreground: oklch(0.99 0.005 25);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.62 0.24 350);
+  --gold: oklch(0.79 0.13 88);
+  --gold-foreground: oklch(0.18 0.03 88);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@utility text-gradient-fucsia {
+  background-image: linear-gradient(120deg, var(--primary), oklch(0.75 0.2 350));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility card-neo {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 30px oklch(0 0 0 / 35%);
+}
+
+@utility btn-gold-outline {
+  border: 1px solid oklch(0.79 0.13 88 / 45%);
+  color: var(--color-gold);
+}
