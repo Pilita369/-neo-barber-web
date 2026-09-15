@@ -123,6 +123,12 @@ function Portada() {
             </a>
           ) : null}
         </div>
+
+        <div className="mt-8 text-center">
+          <Link to="/auth" className="text-xs text-muted-foreground underline">
+            Acceso administrador
+          </Link>
+        </div>
       </section>
     </main>
   );
