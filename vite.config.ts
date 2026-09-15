@@ -12,4 +12,6 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Deploying to Vercel instead of the Lovable/Cloudflare default.
+  nitro: { preset: "vercel" },
 });

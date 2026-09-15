@@ -84,7 +84,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Neo Barbería — Turnos online con David" },
       { property: "og:description", content: "Reservá tu turno online en Neo Barbería, Belgrano 3233, Neuquén Capital." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://neo-barberweb.vercel.app/logo-neo.png" },
+      { property: "og:image:width", content: "1254" },
+      { property: "og:image:height", content: "1254" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://neo-barberweb.vercel.app/logo-neo.png" },
     ],
     links: [
       {
