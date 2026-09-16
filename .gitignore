@@ -28,6 +28,9 @@ dist-ssr
 # Vercel build output
 .vercel
 
+# Git worktrees for isolated feature work
+.worktrees
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
