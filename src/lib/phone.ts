@@ -8,6 +8,7 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
  * interpretar con confianza.
  */
 export function toPhoneE164(input: string): string | null {
+  if (typeof input !== "string" || !input.trim()) return null;
   const parsed = parsePhoneNumberFromString(input, "AR");
   if (!parsed || !parsed.isValid()) return null;
 
