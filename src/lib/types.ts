@@ -36,6 +36,32 @@ export interface Client {
   updated_at: string;
 }
 
+export interface ClientListItem extends Client {
+  total_completados: number;
+  last_visit: string | null;
+}
+
+export interface ClientNextAppointment {
+  id: string;
+  date: string;
+  start_time: string;
+  service_name: string;
+}
+
+export interface ClientProfile {
+  client: Client;
+  next_appointment: ClientNextAppointment | null;
+  last_visit: string | null;
+  total_completados: number;
+}
+
+export interface ClientMonthAppointment {
+  id: string;
+  date: string;
+  start_time: string;
+  service_name: string;
+}
+
 export interface BusinessHour {
   id: string;
   professional_id: string;
