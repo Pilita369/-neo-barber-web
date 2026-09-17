@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          client_id: string | null
           client_lastname: string
           client_name: string
           client_phone: string
@@ -34,6 +35,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_id?: string | null
           client_lastname: string
           client_name: string
           client_phone: string
@@ -52,6 +54,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_id?: string | null
           client_lastname?: string
           client_name?: string
           client_phone?: string
@@ -70,6 +73,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_professional_id_fkey"
             columns: ["professional_id"]
@@ -210,6 +220,33 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          created_at: string
+          id: string
+          lastname: string | null
+          name: string
+          phone_e164: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lastname?: string | null
+          name: string
+          phone_e164: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lastname?: string | null
+          name?: string
+          phone_e164?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       professionals: {
         Row: {
           active: boolean
@@ -341,11 +378,13 @@ export type Database = {
           p_date: string
           p_end_time: string
           p_notes: string
+          p_phone_e164?: string | null
           p_professional_id: string
           p_service_id: string
           p_start_time: string
         }
         Returns: {
+          client_id: string | null
           client_lastname: string
           client_name: string
           client_phone: string
