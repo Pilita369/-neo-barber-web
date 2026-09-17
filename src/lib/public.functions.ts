@@ -9,6 +9,7 @@ import {
   todayBA,
   weekdayOf,
 } from "./datetime";
+import { toPhoneE164 } from "./phone";
 import { computeSlots, type SlotContext } from "./slots";
 import type { BusinessHour, Service, Settings } from "./types";
 
@@ -263,6 +264,7 @@ export const createAppointment = createServerFn({ method: "POST" })
     if (!professional || !service || !settings) throw new Error("No se pudo procesar la reserva");
 
     const phone = data.phone.replace(/\D/g, "");
+    const phoneE164 = toPhoneE164(data.phone);
     const ctx = await buildDayContext(
       supabase,
       professional.id,
@@ -289,6 +291,7 @@ export const createAppointment = createServerFn({ method: "POST" })
       p_date: data.date,
       p_start_time: data.time,
       p_end_time: endTime,
+      p_phone_e164: phoneE164,
     });
     if (error) {
       if (String(error.message).includes("SLOT_TAKEN")) {

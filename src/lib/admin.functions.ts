@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { timeToMin, todayBA } from "./datetime";
+import { toPhoneE164 } from "./phone";
 
 type Ctx = { context: { supabase: any; userId: string } };
 
@@ -187,6 +188,7 @@ export const createManualAppointment = createServerFn({ method: "POST" })
       .single();
     const endMin = timeToMin(data.time) + service.duration_min + service.buffer_min;
     const endTime = `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`;
+    const phoneE164 = toPhoneE164(data.phone);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: appt, error } = await supabaseAdmin.rpc("create_appointment", {
       p_professional_id: professionalId,
@@ -199,6 +201,7 @@ export const createManualAppointment = createServerFn({ method: "POST" })
       p_start_time: data.time,
       p_end_time: endTime,
       p_admin_created: true,
+      p_phone_e164: phoneE164,
     });
     if (error) {
       if (String(error.message).includes("SLOT_TAKEN"))
