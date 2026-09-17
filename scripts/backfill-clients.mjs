@@ -11,9 +11,19 @@ if (!url || !key) {
 const supabase = createClient(url, key);
 
 function toPhoneE164(input) {
+  if (typeof input !== "string" || !input.trim()) return null;
   const parsed = parsePhoneNumberFromString(input, "AR");
   if (!parsed || !parsed.isValid()) return null;
-  return parsed.number;
+
+  if (parsed.country !== "AR") {
+    // No es un número argentino (alguien tipeó un código de país distinto
+    // con el número completo) — no aplica la ambigüedad celular/fija de AR.
+    return parsed.number;
+  }
+
+  let national = parsed.nationalNumber;
+  if (national.startsWith("9")) national = national.slice(1);
+  return `+549${national}`;
 }
 
 async function findOrCreateClient(phoneE164, name, lastname) {
