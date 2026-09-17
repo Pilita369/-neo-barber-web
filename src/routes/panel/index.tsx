@@ -1,61 +1,26 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Loader2, LogOut, MessageCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import {
   approveAppointment,
-  getIsAdmin,
   getPanelData,
   rejectAppointment,
   setAppointmentStatus,
 } from "@/lib/admin.functions";
 import { addDays, fechaLarga, todayBA, waLink } from "@/lib/datetime";
 import { ESTADOS, type Appointment, type AppointmentStatus } from "@/lib/types";
+import { usePanelAuth } from "@/lib/use-panel-auth";
 
 export const Route = createFileRoute("/panel/")({
   head: () => ({ meta: [{ title: "Panel — Neo Barbería" }] }),
   component: PanelPage,
 });
 
-type AuthState = "checking" | "signed-out" | "forbidden" | "ok";
-
 function PanelPage() {
-  const navigate = useNavigate();
-  const [authState, setAuthState] = useState<AuthState>("checking");
-  const getIsAdminFn = useServerFn(getIsAdmin);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        if (active) setAuthState("signed-out");
-        return;
-      }
-      try {
-        const res = await getIsAdminFn();
-        if (active) setAuthState(res.isAdmin ? "ok" : "forbidden");
-      } catch {
-        if (active) setAuthState("forbidden");
-      }
-    })();
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
-  }, []);
-
-  useEffect(() => {
-    if (authState === "signed-out") navigate({ to: "/auth" });
-  }, [authState, navigate]);
-
-  async function cerrarSesion() {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  }
+  const { authState, cerrarSesion } = usePanelAuth();
 
   if (authState === "checking" || authState === "signed-out") {
     return (
