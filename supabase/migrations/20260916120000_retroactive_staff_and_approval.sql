@@ -1,7 +1,10 @@
 -- Retroactive record of schema changes applied directly via the Supabase
 -- SQL Editor on 2026-09-14/15 (superadmin role, staff_accounts,
--- needs_approval). Guarded so this file is safe to run again against a
--- database that already has these — it must not fail if re-applied.
+-- needs_approval, and the create_appointment update that added
+-- p_admin_created and the needs_approval logic — that function body is
+-- fully re-defined by the next migration, so it isn't repeated here).
+-- Guarded so this file is safe to run again against a database that
+-- already has these — it must not fail if re-applied.
 
 alter type public.app_role add value if not exists 'superadmin';
 
