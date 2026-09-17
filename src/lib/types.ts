@@ -27,6 +27,15 @@ export interface Professional {
   name: string;
 }
 
+export interface Client {
+  id: string;
+  phone_e164: string;
+  name: string;
+  lastname: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BusinessHour {
   id: string;
   professional_id: string;
