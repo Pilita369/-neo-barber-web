@@ -35,6 +35,14 @@ export function weekdayOf(dateStr: string): number {
   return new Date(dateStr + "T12:00:00Z").getUTCDay();
 }
 
+/** Primer y último día de un mes (1-12) en formato "yyyy-mm-dd". */
+export function monthRange(year: number, month: number): { from: string; to: string } {
+  const from = `${year}-${String(month).padStart(2, "0")}-01`;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const to = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  return { from, to };
+}
+
 /** "HH:mm" o "HH:mm:ss" -> minutos desde medianoche */
 export function timeToMin(t: string): number {
   const parts = t.split(":").map(Number);
