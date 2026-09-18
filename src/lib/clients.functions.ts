@@ -16,19 +16,13 @@ async function assertAdmin(ctx: Ctx["context"]) {
   if (!data) throw new Error("No tenés permisos de administrador");
 }
 
-// clients tiene RLS sin políticas: con el JWT del admin devuelve 0 filas, así que se lee con service role tras assertAdmin.
-async function clientsDb() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
-}
-
 export const listClients = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ search: z.string().trim().max(60).optional() }).parse(data))
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }: { data: { search?: string | undefined } } & Ctx) => {
     await assertAdmin(context);
 
-    let query = (await clientsDb()).from("clients").select("*");
+    let query = context.supabase.from("clients").select("*");
     if (data.search) {
       const digits = data.search.replace(/\D/g, "");
       const orParts = [`name.ilike.%${data.search}%`, `lastname.ilike.%${data.search}%`];
@@ -69,7 +63,7 @@ export const getClientProfile = createServerFn({ method: "GET" })
   .handler(async ({ data, context }: { data: { clientId: string } } & Ctx) => {
     await assertAdmin(context);
 
-    const { data: client, error: clientError } = await (await clientsDb())
+    const { data: client, error: clientError } = await context.supabase
       .from("clients")
       .select("*")
       .eq("id", data.clientId)
