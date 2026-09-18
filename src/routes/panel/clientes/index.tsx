@@ -84,9 +84,7 @@ function ClientList({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           {q.data!.map((c) => (
             <li key={c.id}>
               <Link
-                // @ts-expect-error /panel/clientes/$id route not created yet (Task 8); remove this once it exists
                 to="/panel/clientes/$id"
-                // @ts-expect-error /panel/clientes/$id route not created yet (Task 8); remove this once it exists
                 params={{ id: c.id }}
                 className="card-neo block p-4 transition active:scale-[0.99]"
               >
