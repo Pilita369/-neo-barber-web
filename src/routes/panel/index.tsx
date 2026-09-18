@@ -3,13 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, LogOut, MessageCircle } from "lucide-react";
+import { AlertTriangle, Loader2, MessageCircle } from "lucide-react";
 import {
   approveAppointment,
   getPanelData,
   rejectAppointment,
   setAppointmentStatus,
 } from "@/lib/admin.functions";
+import { PanelNav } from "@/components/panel-nav";
 import { addDays, fechaLarga, todayBA, waLink } from "@/lib/datetime";
 import { ESTADOS, type Appointment, type AppointmentStatus } from "@/lib/types";
 import { usePanelAuth } from "@/lib/use-panel-auth";
@@ -122,19 +123,15 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   const resto = todos.filter((a) => !(a.needs_approval && a.status === "pendiente"));
 
   return (
-    <main className="mx-auto min-h-screen max-w-2xl px-5 pb-16 pt-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl tracking-wide">Agenda</h1>
-          <p className="text-xs text-muted-foreground">Próximos 7 días</p>
-        </div>
-        <button
-          onClick={onCerrarSesion}
-          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground"
-        >
-          <LogOut className="size-3.5" /> Salir
-        </button>
-      </header>
+    <>
+      <PanelNav onCerrarSesion={onCerrarSesion} />
+      <main className="mx-auto min-h-screen max-w-2xl px-5 pb-16 pt-6">
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-3xl tracking-wide">Agenda</h1>
+            <p className="text-xs text-muted-foreground">Próximos 7 días</p>
+          </div>
+        </header>
 
       {q.isPending ? (
         <div className="mt-10 flex justify-center">
@@ -228,8 +225,9 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
               ))
             )}
           </div>
-        </>
-      )}
-    </main>
+          </>
+        )}
+      </main>
+    </>
   );
 }
