@@ -139,7 +139,7 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                 modifiersClassNames={{ atendido: "bg-gold text-gold-foreground rounded-md" }}
                 onDayClick={(date, modifiers) => {
                   if (!modifiers["atendido"]) return;
-                  const iso = date.toISOString().slice(0, 10);
+                  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
                   setSelectedDay(iso === selectedDay ? null : iso);
                 }}
               />
