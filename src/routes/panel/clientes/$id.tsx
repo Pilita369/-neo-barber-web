@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
-import { getClientProfile } from "@/lib/clients.functions";
+import { getClientProfile, getClientMonth } from "@/lib/clients.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
+import { Calendar } from "@/components/ui/calendar";
+import type { ClientMonthAppointment } from "@/lib/types";
 import { fechaLarga, waLink } from "@/lib/datetime";
 
 export const Route = createFileRoute("/panel/clientes/$id")({
@@ -46,6 +49,28 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
     queryFn: () => getClientProfileFn({ data: { clientId: id } }),
     retry: 1,
   });
+
+  const getClientMonthFn = useServerFn(getClientMonth);
+  const [viewedMonth, setViewedMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const monthQuery = useQuery({
+    queryKey: ["cliente-mes", id, viewedMonth.year, viewedMonth.month],
+    queryFn: () =>
+      getClientMonthFn({ data: { clientId: id, year: viewedMonth.year, month: viewedMonth.month } }),
+  });
+
+  const appts = monthQuery.data ?? [];
+  const completadosDelMes = appts.length;
+  const highlightedDates = [...new Set(appts.map((a) => a.date))].map(
+    (d) => new Date(d + "T12:00:00Z"),
+  );
+  const selectedDayAppts: ClientMonthAppointment[] = selectedDay
+    ? appts.filter((a) => a.date === selectedDay)
+    : [];
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-5 pb-16">
@@ -96,6 +121,38 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
               Última visita: {q.data.last_visit ? fechaLarga(q.data.last_visit) : "—"}
             </p>
             <p className="text-sm">Cortes completados (histórico): {q.data.total_completados}</p>
+          </section>
+
+          <section className="card-neo mt-4 p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg tracking-wide text-gold">Calendario</h2>
+              <p className="text-sm text-muted-foreground">Completados este mes: {completadosDelMes}</p>
+            </div>
+            <div className="mt-3">
+              <Calendar
+                month={new Date(viewedMonth.year, viewedMonth.month - 1, 1)}
+                onMonthChange={(date) => {
+                  setViewedMonth({ year: date.getFullYear(), month: date.getMonth() + 1 });
+                  setSelectedDay(null);
+                }}
+                modifiers={{ atendido: highlightedDates }}
+                modifiersClassNames={{ atendido: "bg-gold text-gold-foreground rounded-md" }}
+                onDayClick={(date, modifiers) => {
+                  if (!modifiers["atendido"]) return;
+                  const iso = date.toISOString().slice(0, 10);
+                  setSelectedDay(iso === selectedDay ? null : iso);
+                }}
+              />
+            </div>
+            {selectedDay && selectedDayAppts.length > 0 ? (
+              <div className="mt-3 space-y-2 border-t border-border pt-3">
+                {selectedDayAppts.map((a) => (
+                  <p key={a.id} className="text-sm">
+                    {a.start_time} h · {a.service_name}
+                  </p>
+                ))}
+              </div>
+            ) : null}
           </section>
         </>
       )}
