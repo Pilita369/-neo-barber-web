@@ -15,7 +15,6 @@ export function PanelNav({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           Agenda
         </Link>
         <Link
-          // @ts-expect-error /panel/clientes route not created yet (Task 7); remove this once it exists
           to="/panel/clientes"
           className="rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
           activeProps={{ className: "bg-primary text-primary-foreground" }}
