@@ -44,6 +44,7 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   const q = useQuery({
     queryKey: ["cliente", id],
     queryFn: () => getClientProfileFn({ data: { clientId: id } }),
+    retry: 1,
   });
 
   return (
