@@ -48,7 +48,7 @@ function AuthPage() {
             onChange={(e) => setPhone(e.target.value)}
             inputMode="tel"
             autoComplete="tel"
-            placeholder="299 615 2272"
+            placeholder="299 XXX XXXX"
             className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring"
           />
         </label>

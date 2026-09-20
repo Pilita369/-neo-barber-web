@@ -16,7 +16,7 @@ import { PanelNav } from "@/components/panel-nav";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { addDays, fechaLarga, todayBA, waLink } from "@/lib/datetime";
+import { addDays, fechaCorta, fechaLarga, todayBA, waLink } from "@/lib/datetime";
 import { ESTADOS, type Appointment, type AppointmentStatus } from "@/lib/types";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 
@@ -228,21 +228,34 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   function AgendaDayButton({ className, day, modifiers, ...props }: ComponentProps<typeof DayButton>) {
     const iso = isoOf(day.date);
     const count = countsByDate.get(iso) ?? 0;
+    const isSelected = iso === selectedDay;
     return (
       <Button
         variant="ghost"
         size="icon"
         data-today={modifiers["today"] || undefined}
+        data-selected={isSelected || undefined}
         className={cn(
           "flex aspect-square h-auto w-full min-w-(--cell-size) flex-col items-center justify-center gap-0.5 font-normal leading-none",
           "data-[today=true]:ring-1 data-[today=true]:ring-gold",
-          count > 0 && "bg-accent",
+          "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground data-[selected=true]:ring-0",
+          count > 0 && !isSelected && "bg-accent",
           className,
         )}
         {...props}
       >
         <span>{day.date.getDate()}</span>
-        {count > 0 ? <span className="text-[10px] font-medium text-gold">{count}</span> : null}
+        {count > 0 ? (
+          <span
+            className={cn(
+              "flex items-center gap-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+              isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-gold text-gold-foreground",
+            )}
+          >
+            {count}
+            <span className="hidden md:inline">{count === 1 ? " turno" : " turnos"}</span>
+          </span>
+        ) : null}
       </Button>
     );
   }
@@ -300,7 +313,7 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
 
         <div className="mt-8">
           <h2 className="font-display text-xl tracking-wide text-gold">Calendario</h2>
-          <div className="card-neo mt-3 p-3">
+          <div className="card-neo mt-3 p-2 md:p-2.5">
             {monthQuery.isPending ? (
               <div className="flex justify-center py-6">
                 <Loader2 className="size-5 animate-spin text-primary" />
@@ -318,15 +331,19 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                   setSelectedDay(iso === selectedDay ? null : iso);
                 }}
                 components={{ DayButton: AgendaDayButton }}
-                className="mx-auto w-full max-w-full [--cell-size:2.75rem] sm:[--cell-size:3rem]"
+                className="mx-auto w-full max-w-full [--cell-size:2.75rem] md:[--cell-size:2.5rem]"
+                classNames={{
+                  month: "flex w-full flex-col gap-2 md:gap-1.5",
+                  week: "mt-1.5 flex w-full md:mt-1",
+                }}
               />
             )}
           </div>
 
           {selectedDay ? (
             <div className="mt-4 space-y-3">
-              <h3 className="font-display text-lg tracking-wide">
-                {fechaLarga(selectedDay)} · {selectedDayAppts.length} turno
+              <h3 className="font-display text-lg uppercase tracking-wide">
+                {fechaCorta(selectedDay)} · {selectedDayAppts.length} turno
                 {selectedDayAppts.length === 1 ? "" : "s"}
               </h3>
               {selectedDayAppts.map((appt) => (

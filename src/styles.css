@@ -91,11 +91,24 @@
     border-color: var(--color-border);
   }
 
+  html {
+    width: 100%;
+    overflow-x: clip;
+    background-color: var(--color-background);
+  }
+
   body {
+    width: 100%;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-tap-highlight-color: transparent;
+    overflow-x: clip;
+  }
+
+  img,
+  svg {
+    max-width: 100%;
   }
 }
 

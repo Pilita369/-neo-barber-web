@@ -78,6 +78,15 @@ export function fechaLarga(dateStr: string): string {
   return `${(DIAS[wd] ?? "").toLowerCase()} ${d} de ${MESES[m - 1] ?? ""} de ${y}`;
 }
 
+/** "2026-09-14" -> "lunes 14 de septiembre" (sin año) */
+export function fechaCorta(dateStr: string): string {
+  const parts = dateStr.split("-").map(Number);
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  const wd = weekdayOf(dateStr);
+  return `${(DIAS[wd] ?? "").toLowerCase()} ${d} de ${MESES[m - 1] ?? ""}`;
+}
+
 export function diaCorto(dateStr: string): string {
   return DIAS_CORTO[weekdayOf(dateStr)] ?? "";
 }

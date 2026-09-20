@@ -137,6 +137,8 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                 }}
                 modifiers={{ atendido: highlightedDates }}
                 modifiersClassNames={{ atendido: "bg-gold text-gold-foreground rounded-md" }}
+                classNames={{ root: "w-full" }}
+                className="w-full max-w-full [--cell-size:2.25rem] md:[--cell-size:3rem]"
                 onDayClick={(date, modifiers) => {
                   if (!modifiers["atendido"]) return;
                   const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
