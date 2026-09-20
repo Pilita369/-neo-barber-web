@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
 import { getClientProfile, getClientMonth } from "@/lib/clients.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
+import { SiteFooter } from "@/components/site-footer";
 import { Calendar } from "@/components/ui/calendar";
 import type { ClientMonthAppointment } from "@/lib/types";
 import { fechaLarga, waLink } from "@/lib/datetime";
@@ -158,6 +159,8 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           </section>
         </>
       )}
+
+      <SiteFooter />
     </main>
   );
 }

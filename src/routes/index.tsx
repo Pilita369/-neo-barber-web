@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { Clock, Instagram, MapPin, Scissors, MessageCircle } from "lucide-react";
+import { Clock, Instagram, Lock, MapPin, Scissors, MessageCircle } from "lucide-react";
 import { getBookingData } from "@/lib/public.functions";
 import { waLink } from "@/lib/datetime";
+import { SiteFooter } from "@/components/site-footer";
 import portada from "@/assets/portada-david.png";
 
 const bookingDataQuery = queryOptions({
@@ -124,11 +125,17 @@ function Portada() {
           ) : null}
         </div>
 
-        <div className="mt-8 text-center">
-          <Link to="/auth" className="text-xs text-muted-foreground underline">
-            Acceso administrador
+        <div className="mt-8 flex justify-center">
+          <Link
+            to="/auth"
+            aria-label="Acceso administrador"
+            className="p-2 text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+          >
+            <Lock className="size-4" />
           </Link>
         </div>
+
+        <SiteFooter />
       </section>
     </main>
   );

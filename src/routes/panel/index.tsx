@@ -13,6 +13,7 @@ import {
   setAppointmentStatus,
 } from "@/lib/admin.functions";
 import { PanelNav } from "@/components/panel-nav";
+import { SiteFooter } from "@/components/site-footer";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -359,6 +360,8 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
             </div>
           ) : null}
         </div>
+
+        <SiteFooter />
       </main>
     </>
   );

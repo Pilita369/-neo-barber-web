@@ -6,6 +6,7 @@ import { Loader2, Search } from "lucide-react";
 import { listClients } from "@/lib/clients.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
+import { SiteFooter } from "@/components/site-footer";
 import { fechaLarga } from "@/lib/datetime";
 
 export const Route = createFileRoute("/panel/clientes/")({
@@ -102,6 +103,8 @@ function ClientList({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           ))}
         </ul>
       )}
+
+      <SiteFooter />
     </main>
   );
 }

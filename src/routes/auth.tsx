@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { phoneToEmail } from "@/lib/staff-auth";
 
@@ -34,7 +34,13 @@ function AuthPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
+    <main className="relative mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
+      <Link
+        to="/"
+        className="absolute left-4 top-4 flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" /> Volver al inicio
+      </Link>
       <div className="mb-8 text-center">
         <Lock className="mx-auto size-8 text-gold" />
         <h1 className="mt-3 font-display text-4xl tracking-wide">Panel de administración</h1>
