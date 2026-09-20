@@ -1,0 +1,70 @@
+-- Precio historico del turno (Etapa 5).
+--
+-- price_at_booking: copia del precio del servicio en el momento de crear el
+-- turno. No se hace backfill para turnos existentes: services solo guarda el
+-- precio ACTUAL y no tiene historial de precios, por lo que no hay forma de
+-- demostrar cual era el precio vigente cuando se creo un turno anterior a esta
+-- migracion. Esos turnos quedan con price_at_booking = null a proposito.
+--
+-- charged_amount: importe realmente cobrado, cargado por el admin al marcar
+-- un turno como "atendido" (puede diferir de price_at_booking por descuentos
+-- o promociones). Tambien queda null para turnos historicos.
+alter table public.appointments
+  add column price_at_booking numeric,
+  add column charged_amount numeric;
+
+create or replace function public.create_appointment(
+  p_professional_id uuid,
+  p_service_id uuid,
+  p_client_name text,
+  p_client_lastname text,
+  p_client_phone text,
+  p_notes text,
+  p_date date,
+  p_start_time time,
+  p_end_time time,
+  p_admin_created boolean default false,
+  p_phone_e164 text default null
+) returns public.appointments language plpgsql security definer set search_path = public as $$
+declare
+  v_appt public.appointments;
+  v_needs_approval boolean := false;
+  v_client_id uuid := null;
+  v_price numeric;
+begin
+  perform pg_advisory_xact_lock(hashtext(p_professional_id::text || p_date::text));
+  if exists (
+    select 1 from public.appointments
+    where professional_id = p_professional_id
+      and date = p_date
+      and status in ('pendiente', 'confirmado')
+      and start_time < p_end_time and end_time > p_start_time
+  ) then
+    raise exception 'SLOT_TAKEN';
+  end if;
+  if not p_admin_created and exists (
+    select 1 from public.appointments
+    where client_phone = p_client_phone
+      and status in ('pendiente', 'confirmado')
+  ) then
+    v_needs_approval := true;
+  end if;
+  if p_phone_e164 is not null then
+    insert into public.clients (phone_e164, name, lastname)
+    values (p_phone_e164, p_client_name, p_client_lastname)
+    on conflict (phone_e164) do update set updated_at = now()
+    returning id into v_client_id;
+  end if;
+  select price into v_price from public.services where id = p_service_id;
+  insert into public.appointments (
+    professional_id, service_id, client_name, client_lastname, client_phone,
+    notes, date, start_time, end_time, needs_approval, client_id, price_at_booking
+  )
+  values (
+    p_professional_id, p_service_id, p_client_name, p_client_lastname, p_client_phone,
+    p_notes, p_date, p_start_time, p_end_time, v_needs_approval, v_client_id, v_price
+  )
+  returning * into v_appt;
+  return v_appt;
+end;
+$$;

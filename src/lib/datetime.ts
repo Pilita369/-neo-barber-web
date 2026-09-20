@@ -68,6 +68,12 @@ const MESES = [
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
+/** (2026, 9) -> "Septiembre 2026" */
+export function nombreMes(year: number, month: number): string {
+  const nombre = MESES[month - 1] ?? "";
+  return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${year}`;
+}
+
 /** "2026-09-14" -> "lunes 14 de septiembre" */
 export function fechaLarga(dateStr: string): string {
   const parts = dateStr.split("-").map(Number);

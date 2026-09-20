@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as PanelIndexRouteImport } from './routes/panel/index'
+import { Route as PanelServiciosRouteImport } from './routes/panel/servicios'
 import { Route as TurnoTokenRouteImport } from './routes/turno.$token'
 import { Route as PanelClientesIndexRouteImport } from './routes/panel/clientes/index'
 import { Route as PanelClientesIdRouteImport } from './routes/panel/clientes/$id'
@@ -37,6 +38,11 @@ const PanelIndexRoute = PanelIndexRouteImport.update({
   path: '/panel/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PanelServiciosRoute = PanelServiciosRouteImport.update({
+  id: '/panel/servicios',
+  path: '/panel/servicios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TurnoTokenRoute = TurnoTokenRouteImport.update({
   id: '/turno/$token',
   path: '/turno/$token',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reservar': typeof ReservarRoute
+  '/panel/servicios': typeof PanelServiciosRoute
   '/turno/$token': typeof TurnoTokenRoute
   '/panel/': typeof PanelIndexRoute
   '/panel/clientes/$id': typeof PanelClientesIdRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reservar': typeof ReservarRoute
+  '/panel/servicios': typeof PanelServiciosRoute
   '/turno/$token': typeof TurnoTokenRoute
   '/panel': typeof PanelIndexRoute
   '/panel/clientes/$id': typeof PanelClientesIdRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reservar': typeof ReservarRoute
+  '/panel/servicios': typeof PanelServiciosRoute
   '/turno/$token': typeof TurnoTokenRoute
   '/panel/': typeof PanelIndexRoute
   '/panel/clientes/$id': typeof PanelClientesIdRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reservar'
+    | '/panel/servicios'
     | '/turno/$token'
     | '/panel/'
     | '/panel/clientes/$id'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reservar'
+    | '/panel/servicios'
     | '/turno/$token'
     | '/panel'
     | '/panel/clientes/$id'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reservar'
+    | '/panel/servicios'
     | '/turno/$token'
     | '/panel/'
     | '/panel/clientes/$id'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   ReservarRoute: typeof ReservarRoute
+  PanelServiciosRoute: typeof PanelServiciosRoute
   TurnoTokenRoute: typeof TurnoTokenRoute
   PanelIndexRoute: typeof PanelIndexRoute
   PanelClientesIdRoute: typeof PanelClientesIdRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/panel/servicios': {
+      id: '/panel/servicios'
+      path: '/panel/servicios'
+      fullPath: '/panel/servicios'
+      preLoaderRoute: typeof PanelServiciosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/turno/$token': {
       id: '/turno/$token'
       path: '/turno/$token'
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   ReservarRoute: ReservarRoute,
+  PanelServiciosRoute: PanelServiciosRoute,
   TurnoTokenRoute: TurnoTokenRoute,
   PanelIndexRoute: PanelIndexRoute,
   PanelClientesIdRoute: PanelClientesIdRoute,

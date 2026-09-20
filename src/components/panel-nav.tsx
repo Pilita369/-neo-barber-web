@@ -23,6 +23,14 @@ export function PanelNav({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           Clientes
         </Link>
         <Link
+          to="/panel/servicios"
+          className="rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+          activeProps={{ className: "bg-primary text-primary-foreground" }}
+          inactiveProps={{ className: "text-muted-foreground" }}
+        >
+          Servicios
+        </Link>
+        <Link
           to="/"
           className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors"
         >

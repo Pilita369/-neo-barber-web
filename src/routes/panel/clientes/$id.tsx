@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, Plus } from "lucide-react";
 import { getClientProfile, getClientMonth } from "@/lib/clients.functions";
+import { listServices } from "@/lib/admin.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
 import { SiteFooter } from "@/components/site-footer";
+import { NuevoTurnoDialog } from "@/components/nuevo-turno-dialog";
 import { Calendar } from "@/components/ui/calendar";
-import type { ClientMonthAppointment } from "@/lib/types";
+import type { ClientMonthAppointment, Service } from "@/lib/types";
 import { fechaLarga, waLink } from "@/lib/datetime";
 
 export const Route = createFileRoute("/panel/clientes/$id")({
@@ -43,12 +45,19 @@ function ClientProfilePage() {
 
 function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   const { id } = Route.useParams();
+  const queryClient = useQueryClient();
   const getClientProfileFn = useServerFn(getClientProfile);
+  const listServicesFn = useServerFn(listServices);
 
   const q = useQuery({
     queryKey: ["cliente", id],
     queryFn: () => getClientProfileFn({ data: { clientId: id } }),
     retry: 1,
+  });
+
+  const servicesQuery = useQuery({
+    queryKey: ["servicios"],
+    queryFn: () => listServicesFn() as Promise<Service[]>,
   });
 
   const getClientMonthFn = useServerFn(getClientMonth);
@@ -57,6 +66,7 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [nuevoTurnoOpen, setNuevoTurnoOpen] = useState(false);
 
   const monthQuery = useQuery({
     queryKey: ["cliente-mes", id, viewedMonth.year, viewedMonth.month],
@@ -91,9 +101,17 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
         <p className="card-neo mt-4 p-4 text-sm text-muted-foreground">No encontramos este cliente.</p>
       ) : (
         <>
-          <h1 className="mt-3 font-display text-3xl tracking-wide">
-            {q.data.client.name} {q.data.client.lastname ?? ""}
-          </h1>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <h1 className="font-display text-3xl tracking-wide">
+              {q.data.client.name} {q.data.client.lastname ?? ""}
+            </h1>
+            <button
+              onClick={() => setNuevoTurnoOpen(true)}
+              className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+            >
+              <Plus className="size-3.5" /> Nuevo turno
+            </button>
+          </div>
 
           <section className="card-neo mt-4 space-y-2 p-4">
             <h2 className="font-display text-lg tracking-wide text-gold">Datos</h2>
@@ -161,6 +179,17 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
       )}
 
       <SiteFooter />
+
+      <NuevoTurnoDialog
+        open={nuevoTurnoOpen}
+        onOpenChange={setNuevoTurnoOpen}
+        services={servicesQuery.data ?? []}
+        clienteInicial={q.data ? { ...q.data.client } : null}
+        onCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ["cliente", id] });
+          queryClient.invalidateQueries({ queryKey: ["cliente-mes", id] });
+        }}
+      />
     </main>
   );
 }

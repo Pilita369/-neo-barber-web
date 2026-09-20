@@ -137,7 +137,7 @@ export const getAgendaMonth = createServerFn({ method: "GET" })
     const { data: appts } = await context.supabase
       .from("appointments")
       .select(
-        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, services(name, duration_min)",
+        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, price_at_booking, charged_amount, services(name, duration_min)",
       )
       .eq("professional_id", professionalId)
       .gte("date", from)
@@ -152,6 +152,62 @@ export const getAgendaMonth = createServerFn({ method: "GET" })
       service_name: a.services?.name ?? "",
     }));
     return { appointments };
+  });
+
+export const marcarAtendido = createServerFn({ method: "POST" })
+  .inputValidator((data) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        chargedAmount: z.number().min(0),
+      })
+      .parse(data),
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }: { data: { id: string; chargedAmount: number } } & Ctx) => {
+    await assertAdmin(context);
+    await context.supabase
+      .from("appointments")
+      .update({
+        status: "atendido",
+        charged_amount: data.chargedAmount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+    return { ok: true };
+  });
+
+export const getBusinessSummary = createServerFn({ method: "GET" })
+  .inputValidator((data) =>
+    z
+      .object({
+        year: z.number().int().min(2020).max(2100),
+        month: z.number().int().min(1).max(12),
+      })
+      .parse(data),
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }: { data: { year: number; month: number } } & Ctx) => {
+    await assertAdmin(context);
+    const professionalId = await getProfessionalId(context.supabase);
+    const { from, to } = monthRange(data.year, data.month);
+    const { data: rows } = await context.supabase
+      .from("appointments")
+      .select("client_id, client_phone, charged_amount")
+      .eq("professional_id", professionalId)
+      .eq("status", "atendido")
+      .gte("date", from)
+      .lte("date", to);
+    const list = rows ?? [];
+    const clientKeys = new Set(list.map((r: any) => r.client_id ?? `phone:${r.client_phone}`));
+    const conImporte = list.filter((r: any) => r.charged_amount !== null);
+    const facturacion = conImporte.reduce((sum: number, r: any) => sum + Number(r.charged_amount), 0);
+    return {
+      clientesAtendidos: clientKeys.size,
+      serviciosRealizados: list.length,
+      facturacion,
+      turnosSinImporte: list.length - conImporte.length,
+    };
   });
 
 export const setAppointmentStatus = createServerFn({ method: "POST" })
@@ -243,7 +299,7 @@ export const createManualAppointment = createServerFn({ method: "POST" })
       throw new Error("No se pudo crear el turno");
     }
     const a = Array.isArray(appt) ? appt[0] : appt;
-    return { id: a.id };
+    return { id: a.id, token: a.token };
   });
 
 const blockSchema = z.object({
@@ -321,6 +377,14 @@ export const deleteException = createServerFn({ method: "POST" })
     await assertAdmin(context);
     await context.supabase.from("availability_exceptions").delete().eq("id", data.id);
     return { ok: true };
+  });
+
+export const listServices = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }: Ctx) => {
+    await assertAdmin(context);
+    const { data } = await context.supabase.from("services").select("*").order("sort_order");
+    return data ?? [];
   });
 
 const serviceSchema = z.object({

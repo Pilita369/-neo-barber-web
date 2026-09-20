@@ -3,21 +3,35 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, type ComponentProps } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, MessageCircle } from "lucide-react";
+import { AlertTriangle, Loader2, MessageCircle, Plus } from "lucide-react";
 import type { DayButton } from "react-day-picker";
 import {
   approveAppointment,
   getAgendaMonth,
+  getBusinessSummary,
   getPanelData,
+  marcarAtendido,
   rejectAppointment,
   setAppointmentStatus,
 } from "@/lib/admin.functions";
 import { PanelNav } from "@/components/panel-nav";
 import { SiteFooter } from "@/components/site-footer";
+import { CompartirWebButton } from "@/components/compartir-web-button";
+import { NuevoTurnoDialog } from "@/components/nuevo-turno-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { formatARS } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { addDays, fechaCorta, fechaLarga, todayBA, waLink } from "@/lib/datetime";
+import { addDays, fechaCorta, fechaLarga, nombreMes, todayBA, waLink } from "@/lib/datetime";
 import { ESTADOS, type Appointment, type AppointmentStatus } from "@/lib/types";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 
@@ -76,12 +90,14 @@ function TurnoCard({
   onCambiarEstado,
   onAprobar,
   onRechazar,
+  onMarcarAtendido,
 }: {
   appt: Appointment;
   savingId: string | null;
   onCambiarEstado: (appt: Appointment, next: AppointmentStatus) => void;
   onAprobar: (appt: Appointment) => void;
   onRechazar: (appt: Appointment) => void;
+  onMarcarAtendido: (appt: Appointment) => void;
 }) {
   const necesitaAutorizacion = appt.needs_approval && appt.status === "pendiente";
   return (
@@ -120,7 +136,7 @@ function TurnoCard({
           ACCIONES[appt.status].map((a) => (
             <button
               key={a.next}
-              onClick={() => onCambiarEstado(appt, a.next)}
+              onClick={() => (a.next === "atendido" ? onMarcarAtendido(appt) : onCambiarEstado(appt, a.next))}
               disabled={savingId === appt.id}
               className="btn-gold-outline rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-60"
             >
@@ -148,7 +164,10 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   const setStatusFn = useServerFn(setAppointmentStatus);
   const approveFn = useServerFn(approveAppointment);
   const rejectFn = useServerFn(rejectAppointment);
+  const marcarAtendidoFn = useServerFn(marcarAtendido);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [atendidoAppt, setAtendidoAppt] = useState<Appointment | null>(null);
+  const [importeCobrado, setImporteCobrado] = useState("");
 
   const from = todayBA();
   const to = addDays(from, 6);
@@ -163,16 +182,25 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [nuevoTurnoOpen, setNuevoTurnoOpen] = useState(false);
 
   const monthQuery = useQuery({
     queryKey: ["agenda-month", viewedMonth.year, viewedMonth.month],
     queryFn: () => getAgendaMonthFn({ data: { year: viewedMonth.year, month: viewedMonth.month } }),
   });
 
+  const getBusinessSummaryFn = useServerFn(getBusinessSummary);
+  const resumenQuery = useQuery({
+    queryKey: ["resumen-negocio", viewedMonth.year, viewedMonth.month],
+    queryFn: () =>
+      getBusinessSummaryFn({ data: { year: viewedMonth.year, month: viewedMonth.month } }),
+  });
+
   async function invalidarTodo() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["panel-data"] }),
       queryClient.invalidateQueries({ queryKey: ["agenda-month"] }),
+      queryClient.invalidateQueries({ queryKey: ["resumen-negocio"] }),
     ]);
   }
 
@@ -214,6 +242,30 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
       toast.success("Turno rechazado");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo rechazar el turno");
+    }
+    setSavingId(null);
+  }
+
+  function abrirMarcarAtendido(appt: Appointment) {
+    setAtendidoAppt(appt);
+    setImporteCobrado(appt.price_at_booking != null ? String(appt.price_at_booking) : "");
+  }
+
+  async function confirmarAtendido() {
+    if (!atendidoAppt) return;
+    const importe = Number(importeCobrado);
+    if (!Number.isFinite(importe) || importe < 0) {
+      toast.error("Ingresá un importe válido");
+      return;
+    }
+    setSavingId(atendidoAppt.id);
+    try {
+      await marcarAtendidoFn({ data: { id: atendidoAppt.id, chargedAmount: importe } });
+      await invalidarTodo();
+      toast.success("Turno marcado como atendido");
+      setAtendidoAppt(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo marcar el turno como atendido");
     }
     setSavingId(null);
   }
@@ -265,9 +317,20 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
     <>
       <PanelNav onCerrarSesion={onCerrarSesion} />
       <main className="mx-auto min-h-screen max-w-2xl px-5 pb-16 pt-6">
-        <header>
-          <h1 className="font-display text-3xl tracking-wide">Agenda</h1>
-          <p className="text-xs text-muted-foreground">Calendario mensual de turnos</p>
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-3xl tracking-wide">Agenda</h1>
+            <p className="text-xs text-muted-foreground">Calendario mensual de turnos</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setNuevoTurnoOpen(true)}
+              className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+            >
+              <Plus className="size-3.5" /> Nuevo turno
+            </button>
+            <CompartirWebButton />
+          </div>
         </header>
 
         {q.isPending ? (
@@ -313,6 +376,38 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
         ) : null}
 
         <div className="mt-8">
+          <h2 className="font-display text-xl tracking-wide text-gold">Resumen del negocio</h2>
+          <div className="card-neo mt-3 p-4">
+            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {nombreMes(viewedMonth.year, viewedMonth.month)}
+            </p>
+            {resumenQuery.isPending ? (
+              <div className="mt-3 flex justify-center">
+                <Loader2 className="size-5 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="mt-2 space-y-1 text-sm">
+                <p>Clientes atendidos: {resumenQuery.data?.clientesAtendidos ?? 0}</p>
+                <p>Servicios realizados: {resumenQuery.data?.serviciosRealizados ?? 0}</p>
+                <p>Facturación registrada: {formatARS(resumenQuery.data?.facturacion ?? 0)}</p>
+                {resumenQuery.data && resumenQuery.data.turnosSinImporte > 0 ? (
+                  <p className="pt-1 text-xs text-muted-foreground">
+                    {resumenQuery.data.turnosSinImporte} turno
+                    {resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} atendido
+                    {resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} sin importe registrado (no
+                    incluido{resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} en la facturación).
+                  </p>
+                ) : null}
+              </div>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              Solo cuenta turnos marcados como atendido. Usá las flechas del calendario para ver otros
+              meses.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8">
           <h2 className="font-display text-xl tracking-wide text-gold">Calendario</h2>
           <div className="card-neo mt-3 p-2 md:p-2.5">
             {monthQuery.isPending ? (
@@ -355,6 +450,7 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                   onCambiarEstado={cambiarEstado}
                   onAprobar={aprobar}
                   onRechazar={rechazar}
+                  onMarcarAtendido={abrirMarcarAtendido}
                 />
               ))}
             </div>
@@ -363,6 +459,59 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
 
         <SiteFooter />
       </main>
+
+      <NuevoTurnoDialog
+        open={nuevoTurnoOpen}
+        onOpenChange={setNuevoTurnoOpen}
+        services={q.data?.services ?? []}
+        onCreated={invalidarTodo}
+      />
+
+      <Dialog open={atendidoAppt !== null} onOpenChange={(v) => !v && setAtendidoAppt(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Marcar como atendido</DialogTitle>
+          </DialogHeader>
+          {atendidoAppt ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {atendidoAppt.client_name} {atendidoAppt.client_lastname} · {atendidoAppt.service_name}
+              </p>
+              <div>
+                <Label htmlFor="importe-cobrado">Importe cobrado</Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <Input
+                    id="importe-cobrado"
+                    type="number"
+                    min={0}
+                    value={importeCobrado}
+                    onChange={(e) => setImporteCobrado(e.target.value)}
+                  />
+                </div>
+                {atendidoAppt.price_at_booking != null ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Precio del servicio al reservar: {formatARS(atendidoAppt.price_at_booking)}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Este turno no tiene precio de referencia guardado; ingresá el importe manualmente.
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <button
+              onClick={confirmarAtendido}
+              disabled={savingId === atendidoAppt?.id}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            >
+              Confirmar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

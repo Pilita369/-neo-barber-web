@@ -92,6 +92,8 @@ export interface Appointment {
   service_id: string;
   service_name?: string;
   professional_name?: string;
+  price_at_booking?: number | null;
+  charged_amount?: number | null;
 }
 
 export interface TimeBlock {
