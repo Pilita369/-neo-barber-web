@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Loader2, MapPin, MessageCircle } from "lucide-react";
 import { cancelAppointmentByToken, getAppointmentByToken } from "@/lib/public.functions";
 import { fechaLarga, waLink } from "@/lib/datetime";
+import { formatARS } from "@/lib/format";
 import { ESTADOS } from "@/lib/types";
 
 export const Route = createFileRoute("/turno/$token")({
@@ -108,7 +109,12 @@ function TurnoPage() {
       ) : null}
 
       <div className="card-neo mt-6 space-y-2 p-5">
-        <p className="font-display text-2xl tracking-wide text-gold">{appointment.service_name}</p>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-display text-2xl tracking-wide text-gold">{appointment.service_name}</p>
+          {appointment.service_price !== null ? (
+            <p className="font-display text-xl text-gold">{formatARS(appointment.service_price)}</p>
+          ) : null}
+        </div>
         <p className="text-sm">{fechaLarga(appointment.date)}</p>
         <p className="font-display text-3xl">{appointment.start_time} h</p>
         <p className="text-sm text-muted-foreground">

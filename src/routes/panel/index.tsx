@@ -386,21 +386,53 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                 <Loader2 className="size-5 animate-spin text-primary" />
               </div>
             ) : (
-              <div className="mt-2 space-y-1 text-sm">
-                <p>Clientes atendidos: {resumenQuery.data?.clientesAtendidos ?? 0}</p>
-                <p>Servicios realizados: {resumenQuery.data?.serviciosRealizados ?? 0}</p>
-                <p>Facturación registrada: {formatARS(resumenQuery.data?.facturacion ?? 0)}</p>
-                {resumenQuery.data && resumenQuery.data.turnosSinImporte > 0 ? (
-                  <p className="pt-1 text-xs text-muted-foreground">
-                    {resumenQuery.data.turnosSinImporte} turno
-                    {resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} atendido
-                    {resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} sin importe registrado (no
-                    incluido{resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} en la facturación).
-                  </p>
+              <>
+                <div className="mt-2 space-y-1 text-sm">
+                  <p>Ventas registradas: {formatARS(resumenQuery.data?.ventas ?? 0)}</p>
+                  <p>Servicios realizados: {resumenQuery.data?.serviciosRealizados ?? 0}</p>
+                  <p>Clientes atendidos: {resumenQuery.data?.clientesAtendidos ?? 0}</p>
+                  {resumenQuery.data && resumenQuery.data.turnosSinImporte > 0 ? (
+                    <p className="pt-1 text-xs text-muted-foreground">
+                      {resumenQuery.data.turnosSinImporte} turno
+                      {resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} atendido
+                      {resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} sin importe registrado (no
+                      incluido{resumenQuery.data.turnosSinImporte === 1 ? "" : "s"} en las ventas).
+                    </p>
+                  ) : null}
+                </div>
+
+                {resumenQuery.data && resumenQuery.data.porServicio.length > 0 ? (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Servicios más vendidos — {nombreMes(viewedMonth.year, viewedMonth.month)}
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      {resumenQuery.data.porServicio.map((s, i, arr) => {
+                        const max = arr[0]?.cantidad || 1;
+                        const pct = Math.round((s.cantidad / max) * 100);
+                        return (
+                          <div key={s.name}>
+                            <div className="flex items-baseline justify-between gap-2 text-sm">
+                              <span>{s.name}</span>
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {s.cantidad} · {formatARS(s.facturacion)}
+                              </span>
+                            </div>
+                            <div className="mt-1 h-2 rounded-full bg-secondary">
+                              <div
+                                className="h-2 rounded-full bg-gold"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ) : null}
-              </div>
+              </>
             )}
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-4 text-xs text-muted-foreground">
               Solo cuenta turnos marcados como atendido. Usá las flechas del calendario para ver otros
               meses.
             </p>

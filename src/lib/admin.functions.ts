@@ -193,7 +193,7 @@ export const getBusinessSummary = createServerFn({ method: "GET" })
     const { from, to } = monthRange(data.year, data.month);
     const { data: rows } = await context.supabase
       .from("appointments")
-      .select("client_id, client_phone, charged_amount")
+      .select("client_id, client_phone, charged_amount, service_id, services(name)")
       .eq("professional_id", professionalId)
       .eq("status", "atendido")
       .gte("date", from)
@@ -201,12 +201,25 @@ export const getBusinessSummary = createServerFn({ method: "GET" })
     const list = rows ?? [];
     const clientKeys = new Set(list.map((r: any) => r.client_id ?? `phone:${r.client_phone}`));
     const conImporte = list.filter((r: any) => r.charged_amount !== null);
-    const facturacion = conImporte.reduce((sum: number, r: any) => sum + Number(r.charged_amount), 0);
+    const ventas = conImporte.reduce((sum: number, r: any) => sum + Number(r.charged_amount), 0);
+
+    const porServicioMap = new Map<string, { name: string; cantidad: number; facturacion: number }>();
+    for (const r of list as any[]) {
+      const key = r.service_id ?? "sin-servicio";
+      const name = r.services?.name ?? "Sin servicio";
+      const entry = porServicioMap.get(key) ?? { name, cantidad: 0, facturacion: 0 };
+      entry.cantidad += 1;
+      if (r.charged_amount !== null) entry.facturacion += Number(r.charged_amount);
+      porServicioMap.set(key, entry);
+    }
+    const porServicio = [...porServicioMap.values()].sort((a, b) => b.cantidad - a.cantidad);
+
     return {
       clientesAtendidos: clientKeys.size,
       serviciosRealizados: list.length,
-      facturacion,
+      ventas,
       turnosSinImporte: list.length - conImporte.length,
+      porServicio,
     };
   });
 

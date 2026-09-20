@@ -314,7 +314,7 @@ export const getAppointmentByToken = createServerFn({ method: "GET" })
     const { data: appt } = await supabase
       .from("appointments")
       .select(
-        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, services(name, duration_min), professionals(name)",
+        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, price_at_booking, services(name, duration_min, show_price), professionals(name)",
       )
       .eq("token", data.token)
       .maybeSingle();
@@ -324,7 +324,11 @@ export const getAppointmentByToken = createServerFn({ method: "GET" })
       .select("*")
       .eq("id", 1)
       .single();
-    const svc = appt.services as unknown as { name: string; duration_min: number } | null;
+    const svc = appt.services as unknown as {
+      name: string;
+      duration_min: number;
+      show_price: boolean;
+    } | null;
     const prof = appt.professionals as unknown as { name: string } | null;
     const canModify =
       (appt.status === "pendiente" || appt.status === "confirmado") &&
@@ -344,6 +348,7 @@ export const getAppointmentByToken = createServerFn({ method: "GET" })
         needs_approval: appt.needs_approval,
         service_name: svc?.name ?? "",
         service_duration: svc?.duration_min ?? 0,
+        service_price: svc?.show_price && appt.price_at_booking !== null ? appt.price_at_booking : null,
         professional_name: prof?.name ?? "",
       },
       settings: settings as Settings,

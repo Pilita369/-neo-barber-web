@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          charged_amount: number | null
           client_id: string | null
           client_lastname: string
           client_name: string
@@ -27,6 +28,7 @@ export type Database = {
           id: string
           needs_approval: boolean
           notes: string | null
+          price_at_booking: number | null
           professional_id: string
           service_id: string
           start_time: string
@@ -35,6 +37,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          charged_amount?: number | null
           client_id?: string | null
           client_lastname: string
           client_name: string
@@ -46,6 +49,7 @@ export type Database = {
           id?: string
           needs_approval?: boolean
           notes?: string | null
+          price_at_booking?: number | null
           professional_id: string
           service_id: string
           start_time: string
@@ -54,6 +58,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          charged_amount?: number | null
           client_id?: string | null
           client_lastname?: string
           client_name?: string
@@ -65,6 +70,7 @@ export type Database = {
           id?: string
           needs_approval?: boolean
           notes?: string | null
+          price_at_booking?: number | null
           professional_id?: string
           service_id?: string
           start_time?: string
