@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { timeToMin, todayBA } from "./datetime";
+import { monthRange, timeToMin, todayBA } from "./datetime";
 import { toPhoneE164 } from "./phone";
 
 type Ctx = { context: { supabase: any; userId: string } };
@@ -118,6 +118,40 @@ export const getPanelData = createServerFn({ method: "GET" })
         noAsistieron: appointments.filter((a: any) => a.status === "no_asistio").length,
       },
     };
+  });
+
+export const getAgendaMonth = createServerFn({ method: "GET" })
+  .inputValidator((data) =>
+    z
+      .object({
+        year: z.number().int().min(2020).max(2100),
+        month: z.number().int().min(1).max(12),
+      })
+      .parse(data),
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }: { data: { year: number; month: number } } & Ctx) => {
+    await assertAdmin(context);
+    const professionalId = await getProfessionalId(context.supabase);
+    const { from, to } = monthRange(data.year, data.month);
+    const { data: appts } = await context.supabase
+      .from("appointments")
+      .select(
+        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, services(name, duration_min)",
+      )
+      .eq("professional_id", professionalId)
+      .gte("date", from)
+      .lte("date", to)
+      .order("date")
+      .order("start_time");
+
+    const appointments = (appts ?? []).map((a: any) => ({
+      ...a,
+      start_time: String(a.start_time).slice(0, 5),
+      end_time: String(a.end_time).slice(0, 5),
+      service_name: a.services?.name ?? "",
+    }));
+    return { appointments };
   });
 
 export const setAppointmentStatus = createServerFn({ method: "POST" })

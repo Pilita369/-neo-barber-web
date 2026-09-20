@@ -38,7 +38,7 @@ export function usePanelAuth() {
 
   async function cerrarSesion() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth" });
+    navigate({ to: "/" });
   }
 
   return { authState, cerrarSesion };

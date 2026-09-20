@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
+import { Home, LogOut } from "lucide-react";
 
 export function PanelNav({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   return (
@@ -21,6 +21,12 @@ export function PanelNav({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           inactiveProps={{ className: "text-muted-foreground" }}
         >
           Clientes
+        </Link>
+        <Link
+          to="/"
+          className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors"
+        >
+          <Home className="size-3.5" /> Inicio
         </Link>
       </nav>
       <button
