@@ -63,7 +63,7 @@ async function buildDayContext(
         .select("start_time, end_time")
         .eq("professional_id", professionalId)
         .eq("date", date)
-        .in("status", ["pendiente", "confirmado"]),
+        .in("status", ["pendiente", "confirmado", "atendido"]),
     ]);
 
   let earliestTime: string | null = null;
@@ -181,7 +181,7 @@ export const getAvailableDays = createServerFn({ method: "GET" })
           .eq("professional_id", professional.id)
           .gte("date", today)
           .lte("date", last)
-          .in("status", ["pendiente", "confirmado"]),
+          .in("status", ["pendiente", "confirmado", "atendido"]),
       ]);
 
     const hoursByDay = new Map<number, BusinessHour>(

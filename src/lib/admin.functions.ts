@@ -235,6 +235,26 @@ export const setAppointmentStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }: { data: { id: string; status: string } } & Ctx) => {
     await assertAdmin(context);
+    if (data.status === "pendiente" || data.status === "confirmado") {
+      const { data: cur } = await context.supabase
+        .from("appointments")
+        .select("professional_id, date, start_time, end_time")
+        .eq("id", data.id)
+        .single();
+      const { data: clash } = await context.supabase
+        .from("appointments")
+        .select("id")
+        .eq("professional_id", cur.professional_id)
+        .eq("date", cur.date)
+        .neq("id", data.id)
+        .in("status", ["pendiente", "confirmado", "atendido"])
+        .lt("start_time", cur.end_time)
+        .gt("end_time", cur.start_time)
+        .limit(1);
+      if (clash && clash.length > 0) {
+        throw new Error("Ese horario ya está ocupado por otro turno activo");
+      }
+    }
     await context.supabase
       .from("appointments")
       .update({ status: data.status, updated_at: new Date().toISOString() })
