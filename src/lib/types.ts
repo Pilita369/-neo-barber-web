@@ -39,6 +39,7 @@ export interface Client {
 export interface ClientListItem extends Client {
   total_completados: number;
   last_visit: string | null;
+  has_benefit: boolean;
 }
 
 export interface ClientNextAppointment {
@@ -48,11 +49,28 @@ export interface ClientNextAppointment {
   service_name: string;
 }
 
+export interface ClientBenefit {
+  id: string;
+  token: string;
+  kind: "percent_20" | "percent_50" | "free_cut";
+  status: "activo" | "usado";
+  valid_until: string;
+  created_at: string;
+  sent_at: string | null;
+  used_at: string | null;
+}
+
 export interface ClientProfile {
   client: Client;
   next_appointment: ClientNextAppointment | null;
   last_visit: string | null;
   total_completados: number;
+  visitas_mes: number;
+  gastado_mes: number;
+  gastado_historico: number;
+  sin_importe_mes: number;
+  sin_importe_historico: number;
+  benefits: ClientBenefit[];
 }
 
 export interface ClientMonthAppointment {
@@ -94,6 +112,7 @@ export interface Appointment {
   professional_name?: string;
   price_at_booking?: number | null;
   charged_amount?: number | null;
+  benefit_kind?: string | null;
 }
 
 export interface TimeBlock {

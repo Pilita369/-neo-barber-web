@@ -2,13 +2,16 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, MessageCircle, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, Plus, Star } from "lucide-react";
 import { getClientProfile, getClientMonth } from "@/lib/clients.functions";
 import { listServices } from "@/lib/admin.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { NuevoTurnoDialog } from "@/components/nuevo-turno-dialog";
+import { ClientBenefits } from "@/components/client-benefits";
+import { formatARS } from "@/lib/format";
+import { isFrequentClient } from "@/lib/loyalty";
 import { Calendar } from "@/components/ui/calendar";
 import type { ClientMonthAppointment, Service } from "@/lib/types";
 import { fechaLarga, waLink } from "@/lib/datetime";
@@ -128,19 +131,69 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
             </p>
           </section>
 
-          <section className="card-neo mt-4 space-y-2 p-4">
+          {isFrequentClient(q.data.visitas_mes) ? (
+            <div className="mt-4 rounded-xl border border-gold/50 bg-accent p-4">
+              <p className="flex items-center gap-1.5 font-display text-xl tracking-wide text-gold">
+                <Star className="size-4 fill-current" /> CLIENTE FRECUENTE
+              </p>
+              <p className="text-sm">
+                {q.data.visitas_mes} visitas este mes · Beneficio disponible
+              </p>
+            </div>
+          ) : null}
+
+          <section className="card-neo mt-4 p-4">
             <h2 className="font-display text-lg tracking-wide text-gold">Resumen</h2>
+            <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Visitas este mes</dt>
+                <dd className="font-display text-2xl">{q.data.visitas_mes}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Visitas históricas</dt>
+                <dd className="font-display text-2xl">{q.data.total_completados}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Gastado este mes</dt>
+                <dd className="font-display text-2xl">{formatARS(q.data.gastado_mes)}</dd>
+                {q.data.sin_importe_mes > 0 ? (
+                  <dd className="text-xs text-muted-foreground">
+                    {q.data.sin_importe_mes} visita{q.data.sin_importe_mes === 1 ? "" : "s"} sin
+                    importe registrado
+                  </dd>
+                ) : null}
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Gastado histórico</dt>
+                <dd className="font-display text-2xl">{formatARS(q.data.gastado_historico)}</dd>
+                {q.data.sin_importe_historico > 0 ? (
+                  <dd className="text-xs text-muted-foreground">
+                    {q.data.sin_importe_historico} visita
+                    {q.data.sin_importe_historico === 1 ? "" : "s"} sin importe registrado
+                  </dd>
+                ) : null}
+              </div>
+            </dl>
+            <p className="mt-3 text-sm">
+              Última visita: {q.data.last_visit ? fechaLarga(q.data.last_visit) : "—"}
+            </p>
             <p className="text-sm">
               Próximo turno:{" "}
               {q.data.next_appointment
                 ? `${fechaLarga(q.data.next_appointment.date)} · ${q.data.next_appointment.start_time} h · ${q.data.next_appointment.service_name}`
                 : "Sin turnos próximos"}
             </p>
-            <p className="text-sm">
-              Última visita: {q.data.last_visit ? fechaLarga(q.data.last_visit) : "—"}
-            </p>
-            <p className="text-sm">Cortes completados (histórico): {q.data.total_completados}</p>
           </section>
+
+          <ClientBenefits
+            clientId={q.data.client.id}
+            clientName={q.data.client.name}
+            phone={q.data.client.phone_e164}
+            benefits={q.data.benefits}
+            visitasMes={q.data.visitas_mes}
+            canCreate={isFrequentClient(q.data.visitas_mes)}
+            onChanged={() => queryClient.invalidateQueries({ queryKey: ["cliente", id] })}
+          />
 
           <section className="card-neo mt-4 p-4">
             <div className="flex items-center justify-between">

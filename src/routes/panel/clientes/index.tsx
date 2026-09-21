@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Gift, Loader2, Search } from "lucide-react";
 import { listClients } from "@/lib/clients.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
@@ -89,8 +89,15 @@ function ClientList({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                 params={{ id: c.id }}
                 className="card-neo block p-4 transition active:scale-[0.99]"
               >
-                <p className="font-semibold">
-                  {c.name} {c.lastname ?? ""}
+                <p className="flex items-center justify-between gap-2 font-semibold">
+                  <span>
+                    {c.name} {c.lastname ?? ""}
+                  </span>
+                  {c.has_benefit ? (
+                    <span className="flex shrink-0 items-center gap-1 rounded-full border border-gold/50 px-2 py-0.5 text-xs font-medium text-gold">
+                      <Gift className="size-3" /> Beneficio disponible
+                    </span>
+                  ) : null}
                 </p>
                 <p className="mt-1 text-sm text-gold">
                   {c.total_completados === 0

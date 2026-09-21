@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          benefit_id: string | null
           charged_amount: number | null
           client_id: string | null
           client_lastname: string
@@ -37,6 +38,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          benefit_id?: string | null
           charged_amount?: number | null
           client_id?: string | null
           client_lastname: string
@@ -58,6 +60,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          benefit_id?: string | null
           charged_amount?: number | null
           client_id?: string | null
           client_lastname?: string
@@ -79,6 +82,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: true
+            referencedRelation: "benefits"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_client_id_fkey"
             columns: ["client_id"]
@@ -139,6 +149,50 @@ export type Database = {
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benefits: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          kind: string
+          sent_at: string | null
+          status: string
+          token: string
+          used_at: string | null
+          valid_until: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          sent_at?: string | null
+          status?: string
+          token?: string
+          used_at?: string | null
+          valid_until: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          sent_at?: string | null
+          status?: string
+          token?: string
+          used_at?: string | null
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

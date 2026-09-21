@@ -49,10 +49,22 @@ export const listClients = createServerFn({ method: "GET" })
       statsByClient.set(row.client_id, current);
     }
 
+    const today = todayBA();
+    const { data: activeBenefits } = clientIds.length
+      ? await context.supabase
+          .from("benefits")
+          .select("client_id")
+          .in("client_id", clientIds)
+          .eq("status", "activo")
+          .gte("valid_until", today)
+      : { data: [] };
+    const withBenefit = new Set((activeBenefits ?? []).map((b: { client_id: string }) => b.client_id));
+
     const result: ClientListItem[] = (clients ?? []).map((c: any) => ({
       ...c,
       total_completados: statsByClient.get(c.id)?.total ?? 0,
       last_visit: statsByClient.get(c.id)?.lastVisit ?? null,
+      has_benefit: withBenefit.has(c.id),
     }));
     return result;
   });
@@ -71,7 +83,8 @@ export const getClientProfile = createServerFn({ method: "GET" })
     if (clientError || !client) throw new Error("Cliente no encontrado");
 
     const today = todayBA();
-    const [{ data: next }, { data: completados }] = await Promise.all([
+    const monthPrefix = today.slice(0, 7);
+    const [{ data: next }, { data: completados }, { data: benefits }] = await Promise.all([
       context.supabase
         .from("appointments")
         .select("id, date, start_time, services(name)")
@@ -83,11 +96,33 @@ export const getClientProfile = createServerFn({ method: "GET" })
         .limit(1),
       context.supabase
         .from("appointments")
-        .select("date")
+        .select("date, charged_amount")
         .eq("client_id", data.clientId)
         .eq("status", "atendido")
         .order("date", { ascending: false }),
+      context.supabase
+        .from("benefits")
+        .select("id, token, kind, status, valid_until, created_at, sent_at, used_at")
+        .eq("client_id", data.clientId)
+        .order("created_at", { ascending: false }),
     ]);
+
+    let visitasMes = 0;
+    let gastadoMes = 0;
+    let gastadoHistorico = 0;
+    let sinImporteMes = 0;
+    let sinImporteHistorico = 0;
+    for (const row of completados ?? []) {
+      const esDelMes = String(row.date).startsWith(monthPrefix);
+      if (esDelMes) visitasMes += 1;
+      if (row.charged_amount === null) {
+        sinImporteHistorico += 1;
+        if (esDelMes) sinImporteMes += 1;
+      } else {
+        gastadoHistorico += Number(row.charged_amount);
+        if (esDelMes) gastadoMes += Number(row.charged_amount);
+      }
+    }
 
     const nextRow = (next ?? [])[0] as any;
     const profile: ClientProfile = {
@@ -102,6 +137,12 @@ export const getClientProfile = createServerFn({ method: "GET" })
         : null,
       last_visit: completados && completados.length > 0 ? completados[0].date : null,
       total_completados: completados?.length ?? 0,
+      visitas_mes: visitasMes,
+      gastado_mes: gastadoMes,
+      gastado_historico: gastadoHistorico,
+      sin_importe_mes: sinImporteMes,
+      sin_importe_historico: sinImporteHistorico,
+      benefits: (benefits ?? []) as ClientProfile["benefits"],
     };
     return profile;
   });

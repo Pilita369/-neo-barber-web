@@ -10,6 +10,7 @@ import {
   getAgendaMonth,
   getBusinessSummary,
   getPanelData,
+  deleteAppointment,
   marcarAtendido,
   rejectAppointment,
   setAppointmentStatus,
@@ -30,7 +31,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatARS } from "@/lib/format";
+import { BENEFIT_LABEL, suggestedAmount, type BenefitKind } from "@/lib/loyalty";
 import { cn } from "@/lib/utils";
 import { addDays, fechaCorta, fechaLarga, nombreMes, todayBA, waLink } from "@/lib/datetime";
 import { ESTADOS, type Appointment, type AppointmentStatus } from "@/lib/types";
@@ -92,6 +104,7 @@ function TurnoCard({
   onAprobar,
   onRechazar,
   onMarcarAtendido,
+  onEliminar,
 }: {
   appt: Appointment;
   savingId: string | null;
@@ -99,6 +112,7 @@ function TurnoCard({
   onAprobar: (appt: Appointment) => void;
   onRechazar: (appt: Appointment) => void;
   onMarcarAtendido: (appt: Appointment) => void;
+  onEliminar: (appt: Appointment) => void;
 }) {
   const necesitaAutorizacion = appt.needs_approval && appt.status === "pendiente";
   return (
@@ -112,6 +126,11 @@ function TurnoCard({
       </p>
       <p className="text-xs text-muted-foreground">{appt.client_phone}</p>
       {appt.notes ? <p className="mt-1 text-xs text-muted-foreground">Nota: {appt.notes}</p> : null}
+      {appt.benefit_kind ? (
+        <p className="mt-1 text-xs font-semibold text-gold">
+          Beneficio asociado: {BENEFIT_LABEL[appt.benefit_kind as BenefitKind].title}
+        </p>
+      ) : null}
       {necesitaAutorizacion ? (
         <p className="mt-1 text-xs text-muted-foreground">Este cliente ya tiene otro turno activo.</p>
       ) : null}
@@ -153,6 +172,15 @@ function TurnoCard({
         >
           <MessageCircle className="size-3.5" /> WhatsApp
         </a>
+        {appt.status !== "atendido" ? (
+          <button
+            onClick={() => onEliminar(appt)}
+            disabled={savingId === appt.id}
+            className="rounded-lg border border-destructive/60 px-3 py-1.5 text-xs text-destructive disabled:opacity-60"
+          >
+            Eliminar turno
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -169,6 +197,8 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [atendidoAppt, setAtendidoAppt] = useState<Appointment | null>(null);
   const [importeCobrado, setImporteCobrado] = useState("");
+  const [eliminarAppt, setEliminarAppt] = useState<Appointment | null>(null);
+  const deleteFn = useServerFn(deleteAppointment);
 
   const from = todayBA();
   const to = addDays(from, 6);
@@ -249,7 +279,10 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
 
   function abrirMarcarAtendido(appt: Appointment) {
     setAtendidoAppt(appt);
-    setImporteCobrado(appt.price_at_booking != null ? String(appt.price_at_booking) : "");
+    const sugerido = appt.benefit_kind
+      ? suggestedAmount(appt.benefit_kind as BenefitKind, appt.price_at_booking ?? null)
+      : (appt.price_at_booking ?? null);
+    setImporteCobrado(sugerido != null ? String(sugerido) : "");
   }
 
   async function confirmarAtendido() {
@@ -267,6 +300,20 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
       setAtendidoAppt(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo marcar el turno como atendido");
+    }
+    setSavingId(null);
+  }
+
+  async function confirmarEliminar() {
+    if (!eliminarAppt) return;
+    setSavingId(eliminarAppt.id);
+    try {
+      await deleteFn({ data: { id: eliminarAppt.id } });
+      await invalidarTodo();
+      toast.success("Turno eliminado");
+      setEliminarAppt(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo eliminar el turno");
     }
     setSavingId(null);
   }
@@ -495,6 +542,7 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                 onAprobar={aprobar}
                 onRechazar={rechazar}
                 onMarcarAtendido={abrirMarcarAtendido}
+                onEliminar={setEliminarAppt}
               />
             ))}
           </div>
@@ -536,6 +584,12 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                     onChange={(e) => setImporteCobrado(e.target.value)}
                   />
                 </div>
+                {atendidoAppt.benefit_kind ? (
+                  <p className="mt-1 text-xs font-semibold text-gold">
+                    Beneficio asociado: {BENEFIT_LABEL[atendidoAppt.benefit_kind as BenefitKind].title}.
+                    El importe sugerido ya lo contempla; ajustalo a lo que realmente cobres.
+                  </p>
+                ) : null}
                 {atendidoAppt.price_at_booking != null ? (
                   <p className="mt-1 text-xs text-muted-foreground">
                     Precio del servicio al reservar: {formatARS(atendidoAppt.price_at_booking)}
@@ -559,6 +613,21 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={eliminarAppt !== null} onOpenChange={(v) => !v && setEliminarAppt(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar turno</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará definitivamente este turno. ¿Continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarEliminar}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

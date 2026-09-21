@@ -244,6 +244,7 @@ export const createAppointment = createServerFn({ method: "POST" })
         lastname: z.string().trim().min(2, "Ingresá tu apellido").max(60),
         phone: z.string().trim().regex(phoneRegex, "Ingresá un número de WhatsApp válido"),
         notes: z.string().trim().max(300).optional(),
+        benefitToken: z.string().uuid().optional(),
       })
       .parse(data),
   )
@@ -278,6 +279,32 @@ export const createAppointment = createServerFn({ method: "POST" })
       throw new Error("Ese horario ya no está disponible. Elegí otro, por favor.");
     }
 
+    let benefitId: string | null = null;
+    if (data.benefitToken) {
+      const { data: benefit } = await supabase
+        .from("benefits")
+        .select("id, status, valid_until, clients(phone_e164)")
+        .eq("token", data.benefitToken)
+        .maybeSingle();
+      const owner = (benefit?.clients as unknown as { phone_e164: string } | null)?.phone_e164;
+      const { data: inUse } = benefit
+        ? await supabase.from("appointments").select("id").eq("benefit_id", benefit.id).limit(1)
+        : { data: [] };
+      if (
+        !benefit ||
+        benefit.status !== "activo" ||
+        benefit.valid_until < todayBA() ||
+        !phoneE164 ||
+        owner !== phoneE164 ||
+        (inUse && inUse.length > 0)
+      ) {
+        throw new Error(
+          "Este beneficio no se puede aplicar (vencido, ya utilizado o el WhatsApp no coincide).",
+        );
+      }
+      benefitId = benefit.id;
+    }
+
     const endMin = timeToMin(data.time) + service.duration_min + service.buffer_min;
     const endTime = `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`;
 
@@ -300,6 +327,16 @@ export const createAppointment = createServerFn({ method: "POST" })
       throw new Error("No se pudo crear el turno. Intentá de nuevo.");
     }
     const a = Array.isArray(appt) ? appt[0] : appt;
+    if (benefitId) {
+      const { error: linkError } = await supabase
+        .from("appointments")
+        .update({ benefit_id: benefitId })
+        .eq("id", a.id);
+      if (linkError) {
+        await supabase.from("appointments").update({ status: "cancelado" }).eq("id", a.id);
+        throw new Error("Este beneficio ya fue aplicado a otro turno.");
+      }
+    }
     return {
       token: a.token as string,
       code: a.code as string,
@@ -381,7 +418,7 @@ export const cancelAppointmentByToken = createServerFn({ method: "POST" })
     }
     await supabase
       .from("appointments")
-      .update({ status: "cancelado", updated_at: new Date().toISOString() })
+      .update({ status: "cancelado", benefit_id: null, updated_at: new Date().toISOString() })
       .eq("id", appt.id);
     return { ok: true };
   });

@@ -10,6 +10,8 @@ import {
   getBookingData,
   createAppointment,
 } from "@/lib/public.functions";
+import { getBenefitPublic } from "@/lib/benefits.functions";
+import { BENEFIT_LABEL } from "@/lib/loyalty";
 import { diaCorto, diaNumero, fechaLarga } from "@/lib/datetime";
 import type { Service } from "@/lib/types";
 
@@ -18,7 +20,15 @@ const bookingDataQuery = queryOptions({
   queryFn: () => getBookingData(),
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const Route = createFileRoute("/reservar")({
+  validateSearch: (search: Record<string, unknown>): { beneficio?: string | undefined } => ({
+    beneficio:
+      typeof search["beneficio"] === "string" && UUID_RE.test(search["beneficio"])
+        ? search["beneficio"]
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Reservar turno — Neo Barbería" },
@@ -60,6 +70,14 @@ function Reservar() {
   const [saving, setSaving] = useState(false);
 
   const crear = useServerFn(createAppointment);
+  const { beneficio } = Route.useSearch();
+  const beneficioQuery = useQuery({
+    queryKey: ["beneficio-publico", beneficio],
+    queryFn: () => getBenefitPublic({ data: { token: beneficio! } }),
+    enabled: Boolean(beneficio),
+  });
+  const beneficioActivo =
+    beneficioQuery.data?.benefit?.status === "activo" ? beneficio : undefined;
 
   const diasQuery = useQuery({
     queryKey: ["dias", service?.id],
@@ -99,6 +117,7 @@ function Reservar() {
           lastname: form.lastname.trim(),
           phone: form.phone.trim(),
           notes: form.notes.trim() || undefined,
+          benefitToken: beneficioActivo,
         },
       });
       if (res.needsApproval) {
@@ -132,6 +151,22 @@ function Reservar() {
           </p>
         </div>
       </header>
+      {beneficio && beneficioQuery.data ? (
+        <div className="mt-4 rounded-xl border border-gold/40 bg-accent p-3 text-sm">
+          {beneficioActivo && beneficioQuery.data.benefit ? (
+            <p>
+              <span className="font-semibold text-gold">
+                Beneficio aplicado: {BENEFIT_LABEL[beneficioQuery.data.benefit.kind].big}
+              </span>{" "}
+              en tu próximo corte. Reservá con el mismo WhatsApp con el que David te lo envió.
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Este beneficio ya no está disponible. Podés reservar igual, sin descuento.
+            </p>
+          )}
+        </div>
+      ) : null}
 
       <ol className="mt-5 flex gap-1.5" aria-label="Progreso">
         {PASOS.map((p, i) => (

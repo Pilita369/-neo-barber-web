@@ -137,7 +137,7 @@ export const getAgendaMonth = createServerFn({ method: "GET" })
     const { data: appts } = await context.supabase
       .from("appointments")
       .select(
-        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, price_at_booking, charged_amount, services(name, duration_min)",
+        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, price_at_booking, charged_amount, benefit_id, benefits(kind), services(name, duration_min)",
       )
       .eq("professional_id", professionalId)
       .gte("date", from)
@@ -150,6 +150,7 @@ export const getAgendaMonth = createServerFn({ method: "GET" })
       start_time: String(a.start_time).slice(0, 5),
       end_time: String(a.end_time).slice(0, 5),
       service_name: a.services?.name ?? "",
+      benefit_kind: a.benefits?.kind ?? null,
     }));
     return { appointments };
   });
@@ -166,14 +167,23 @@ export const marcarAtendido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }: { data: { id: string; chargedAmount: number } } & Ctx) => {
     await assertAdmin(context);
-    await context.supabase
+    const { data: updated } = await context.supabase
       .from("appointments")
       .update({
         status: "atendido",
         charged_amount: data.chargedAmount,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("benefit_id")
+      .single();
+    if (updated?.benefit_id) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("benefits")
+        .update({ status: "usado", used_at: new Date().toISOString() })
+        .eq("id", updated.benefit_id);
+    }
     return { ok: true };
   });
 
@@ -255,10 +265,34 @@ export const setAppointmentStatus = createServerFn({ method: "POST" })
         throw new Error("Ese horario ya está ocupado por otro turno activo");
       }
     }
+    const libera = data.status === "cancelado" || data.status === "no_asistio";
     await context.supabase
       .from("appointments")
-      .update({ status: data.status, updated_at: new Date().toISOString() })
+      .update({
+        status: data.status,
+        ...(libera ? { benefit_id: null } : {}),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", data.id);
+    return { ok: true };
+  });
+
+export const deleteAppointment = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }: { data: { id: string } } & Ctx) => {
+    await assertAdmin(context);
+    const { data: appt } = await context.supabase
+      .from("appointments")
+      .select("status")
+      .eq("id", data.id)
+      .single();
+    if (!appt) throw new Error("Turno no encontrado");
+    if (appt.status === "atendido") {
+      throw new Error("Un turno atendido no se puede eliminar: alimenta ventas y estadísticas");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("appointments").delete().eq("id", data.id);
     return { ok: true };
   });
 
@@ -281,7 +315,7 @@ export const rejectAppointment = createServerFn({ method: "POST" })
     await assertAdmin(context);
     await context.supabase
       .from("appointments")
-      .update({ status: "cancelado", needs_approval: false, updated_at: new Date().toISOString() })
+      .update({ status: "cancelado", needs_approval: false, benefit_id: null, updated_at: new Date().toISOString() })
       .eq("id", data.id);
     return { ok: true };
   });
