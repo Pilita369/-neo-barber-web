@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -468,29 +469,43 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
             )}
           </div>
 
-          {selectedDay ? (
-            <div className="mt-4 space-y-3">
-              <h3 className="font-display text-lg uppercase tracking-wide">
-                {fechaCorta(selectedDay)} · {selectedDayAppts.length} turno
-                {selectedDayAppts.length === 1 ? "" : "s"}
-              </h3>
-              {selectedDayAppts.map((appt) => (
-                <TurnoCard
-                  key={appt.id}
-                  appt={appt}
-                  savingId={savingId}
-                  onCambiarEstado={cambiarEstado}
-                  onAprobar={aprobar}
-                  onRechazar={rechazar}
-                  onMarcarAtendido={abrirMarcarAtendido}
-                />
-              ))}
-            </div>
-          ) : null}
         </div>
 
         <SiteFooter />
       </main>
+
+      <Dialog open={selectedDay !== null} onOpenChange={(v) => !v && setSelectedDay(null)}>
+        <DialogContent className="top-0 left-0 h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 content-start overflow-y-auto rounded-none p-4 sm:top-[50%] sm:left-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="pr-8 font-display text-2xl uppercase tracking-wide">
+              {selectedDay ? fechaCorta(selectedDay) : ""}
+            </DialogTitle>
+            <DialogDescription>
+              Agenda del día · {selectedDayAppts.length} turno
+              {selectedDayAppts.length === 1 ? "" : "s"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {selectedDayAppts.map((appt) => (
+              <TurnoCard
+                key={appt.id}
+                appt={appt}
+                savingId={savingId}
+                onCambiarEstado={cambiarEstado}
+                onAprobar={aprobar}
+                onRechazar={rechazar}
+                onMarcarAtendido={abrirMarcarAtendido}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => setSelectedDay(null)}
+            className="w-full rounded-lg border border-border px-4 py-3 text-sm font-medium text-muted-foreground"
+          >
+            Volver al calendario
+          </button>
+        </DialogContent>
+      </Dialog>
 
       <NuevoTurnoDialog
         open={nuevoTurnoOpen}
