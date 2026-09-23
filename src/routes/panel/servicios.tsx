@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
-import { listServices, upsertService, deleteService } from "@/lib/admin.functions";
+import { listServices, upsertService, deleteService, getSettings, saveSettings } from "@/lib/admin.functions";
 import { PanelNav } from "@/components/panel-nav";
 import { SiteFooter } from "@/components/site-footer";
 import {
@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { formatARS } from "@/lib/format";
 import { usePanelAuth } from "@/lib/use-panel-auth";
-import type { Service } from "@/lib/types";
+import type { Service, Settings } from "@/lib/types";
 
 export const Route = createFileRoute("/panel/servicios")({
   head: () => ({ meta: [{ title: "Servicios — Neo Barbería" }] }),
@@ -71,6 +71,73 @@ const emptyForm: FormState = {
   show_price: true,
   active: true,
 };
+
+function AliasPagoCard() {
+  const queryClient = useQueryClient();
+  const getSettingsFn = useServerFn(getSettings);
+  const saveSettingsFn = useServerFn(saveSettings);
+  const [alias, setAlias] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const q = useQuery({ queryKey: ["settings"], queryFn: () => getSettingsFn() as Promise<Settings> });
+
+  useEffect(() => {
+    if (q.data) setAlias(q.data.payment_alias ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar el primer valor
+  }, [q.data?.payment_alias]);
+
+  async function guardar() {
+    if (!q.data) return;
+    setSaving(true);
+    try {
+      await saveSettingsFn({
+        data: {
+          business_name: q.data.business_name,
+          address: q.data.address,
+          whatsapp: q.data.whatsapp,
+          welcome_text: q.data.welcome_text,
+          share_text: q.data.share_text,
+          instagram_url: q.data.instagram_url,
+          min_advance_hours: q.data.min_advance_hours,
+          max_days_ahead: q.data.max_days_ahead,
+          cancel_hours_limit: q.data.cancel_hours_limit,
+          payment_alias: alias.trim() || null,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
+      await queryClient.invalidateQueries({ queryKey: ["panel-data"] });
+      toast.success("Alias guardado");
+    } catch {
+      toast.error("No se pudo guardar el alias");
+    }
+    setSaving(false);
+  }
+
+  return (
+    <section className="card-neo mt-4 space-y-2 p-4">
+      <h2 className="font-display text-lg tracking-wide text-gold">Recordatorio de pago</h2>
+      <p className="text-xs text-muted-foreground">
+        Si cargás un alias, se incluye junto con el precio en el recordatorio de WhatsApp que se le
+        envía al cliente al confirmar su turno.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          value={alias}
+          onChange={(e) => setAlias(e.target.value)}
+          placeholder="Alias de transferencia (opcional)"
+          disabled={q.isPending}
+        />
+        <button
+          onClick={guardar}
+          disabled={saving || q.isPending}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        >
+          Guardar
+        </button>
+      </div>
+    </section>
+  );
+}
 
 function Servicios({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   const queryClient = useQueryClient();
@@ -164,6 +231,8 @@ function Servicios({ onCerrarSesion }: { onCerrarSesion: () => void }) {
             <Plus className="size-3.5" /> Nuevo servicio
           </button>
         </header>
+
+        <AliasPagoCard />
 
         {q.isPending ? (
           <div className="mt-10 flex justify-center">

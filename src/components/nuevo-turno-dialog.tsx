@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fechaLarga, waLink } from "@/lib/datetime";
 import { formatARS } from "@/lib/format";
+import { buildTurnoConfirmationMessage } from "@/lib/messages";
 import type { Service } from "@/lib/types";
 
 type ClienteInicial = { name: string; lastname: string | null; phone_e164: string } | null;
@@ -25,12 +26,14 @@ export function NuevoTurnoDialog({
   onOpenChange,
   services,
   clienteInicial,
+  paymentAlias,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   services: Service[];
   clienteInicial?: ClienteInicial;
+  paymentAlias?: string | null;
   onCreated?: () => void;
 }) {
   const activos = services.filter((s) => s.active);
@@ -97,7 +100,15 @@ export function NuevoTurnoDialog({
     resultado && typeof window !== "undefined"
       ? `${window.location.origin}/turno/${resultado.token}`
       : "";
-  const mensajeWa = `Hola ${name} 👋 Tu turno en Neo Barbería quedó reservado para el ${fechaLarga(date)} a las ${time}. Podés ver los detalles de tu turno acá: ${linkTurno}`;
+  const mensajeWa = buildTurnoConfirmationMessage({
+    clientName: name,
+    serviceName: servicioElegido?.name ?? "",
+    date,
+    time,
+    price: servicioElegido?.price ?? null,
+    paymentAlias,
+    link: linkTurno,
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

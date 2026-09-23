@@ -562,7 +562,21 @@ const settingsSchema = z.object({
   min_advance_hours: z.number().int().min(0).max(72),
   max_days_ahead: z.number().int().min(1).max(90),
   cancel_hours_limit: z.number().int().min(0).max(72),
+  payment_alias: z
+    .string()
+    .trim()
+    .max(80)
+    .nullable()
+    .or(z.literal("").transform(() => null)),
 });
+
+export const getSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }: Ctx) => {
+    await assertAdmin(context);
+    const { data } = await context.supabase.from("business_settings").select("*").eq("id", 1).single();
+    return data;
+  });
 
 export const saveSettings = createServerFn({ method: "POST" })
   .inputValidator((data) => settingsSchema.parse(data))

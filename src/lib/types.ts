@@ -20,6 +20,7 @@ export interface Settings {
   min_advance_hours: number;
   max_days_ahead: number;
   cancel_hours_limit: number;
+  payment_alias: string | null;
 }
 
 export interface Professional {

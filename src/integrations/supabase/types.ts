@@ -250,6 +250,7 @@ export type Database = {
           instagram_url: string | null
           max_days_ahead: number
           min_advance_hours: number
+          payment_alias: string | null
           share_text: string
           welcome_text: string
           whatsapp: string
@@ -262,6 +263,7 @@ export type Database = {
           instagram_url?: string | null
           max_days_ahead?: number
           min_advance_hours?: number
+          payment_alias?: string | null
           share_text?: string
           welcome_text?: string
           whatsapp?: string
@@ -274,6 +276,7 @@ export type Database = {
           instagram_url?: string | null
           max_days_ahead?: number
           min_advance_hours?: number
+          payment_alias?: string | null
           share_text?: string
           welcome_text?: string
           whatsapp?: string

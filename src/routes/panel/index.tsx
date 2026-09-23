@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatARS } from "@/lib/format";
+import { buildTurnoConfirmationMessage } from "@/lib/messages";
 import { BENEFIT_LABEL, suggestedAmount, type BenefitKind } from "@/lib/loyalty";
 import { cn } from "@/lib/utils";
 import { addDays, fechaCorta, fechaLarga, nombreMes, todayBA, waLink } from "@/lib/datetime";
@@ -100,6 +101,7 @@ function isoOf(date: Date): string {
 function TurnoCard({
   appt,
   savingId,
+  paymentAlias,
   onCambiarEstado,
   onAprobar,
   onRechazar,
@@ -108,6 +110,7 @@ function TurnoCard({
 }: {
   appt: Appointment;
   savingId: string | null;
+  paymentAlias?: string | null;
   onCambiarEstado: (appt: Appointment, next: AppointmentStatus) => void;
   onAprobar: (appt: Appointment) => void;
   onRechazar: (appt: Appointment) => void;
@@ -115,6 +118,17 @@ function TurnoCard({
   onEliminar: (appt: Appointment) => void;
 }) {
   const necesitaAutorizacion = appt.needs_approval && appt.status === "pendiente";
+  const mensajeWa =
+    appt.status === "pendiente" || appt.status === "confirmado"
+      ? buildTurnoConfirmationMessage({
+          clientName: appt.client_name,
+          serviceName: appt.service_name ?? "",
+          date: appt.date,
+          time: appt.start_time,
+          price: appt.price_at_booking,
+          paymentAlias,
+        })
+      : `Hola ${appt.client_name}, te escribimos de Neo Barbería.`;
   return (
     <div className={cn("card-neo p-4", necesitaAutorizacion && "border-gold/40 bg-accent")}>
       <div className="flex items-baseline justify-between gap-3">
@@ -165,7 +179,7 @@ function TurnoCard({
           ))
         )}
         <a
-          href={waLink(appt.client_phone, `Hola ${appt.client_name}, te escribimos de Neo Barbería.`)}
+          href={waLink(appt.client_phone, mensajeWa)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground"
@@ -538,6 +552,7 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                 key={appt.id}
                 appt={appt}
                 savingId={savingId}
+                paymentAlias={q.data?.settings?.payment_alias}
                 onCambiarEstado={cambiarEstado}
                 onAprobar={aprobar}
                 onRechazar={rechazar}
@@ -559,6 +574,7 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
         open={nuevoTurnoOpen}
         onOpenChange={setNuevoTurnoOpen}
         services={q.data?.services ?? []}
+        paymentAlias={q.data?.settings?.payment_alias}
         onCreated={invalidarTodo}
       />
 
