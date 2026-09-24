@@ -189,23 +189,23 @@ function PromoCard({
           "radial-gradient(circle at 50% 0%, oklch(0.62 0.24 350 / 0.28), transparent 55%), radial-gradient(circle at 50% 100%, oklch(0.79 0.13 88 / 0.15), transparent 55%)",
       }}
     >
-      <div>
-        <img
-          src={logoNeo}
-          alt="Neo Barbería"
-          width={96}
-          height={96}
-          draggable={false}
-          className="mx-auto size-24 object-contain"
-        />
-        <p className="mt-2 pl-[0.35em] font-display text-xs tracking-[0.35em] text-gold">NEO BARBERÍA</p>
-        <h2 className="mt-5 break-words font-display text-4xl leading-none tracking-wide">
+      <img
+        src={logoNeo}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[55%] -translate-x-1/2 -translate-y-1/2 select-none object-contain opacity-[0.12]"
+      />
+
+      <div className="relative">
+        <p className="pl-[0.35em] font-display text-xs tracking-[0.35em] text-gold">NEO BARBERÍA</p>
+        <h2 className="mt-8 break-words font-display text-4xl leading-none tracking-wide">
           <span className="text-gradient-fucsia">{titulo || "NEO BARBERÍA"}</span>
         </h2>
         {frase ? <p className="mt-3 text-base text-muted-foreground">{frase}</p> : null}
       </div>
 
-      <div className="mx-auto w-full">
+      <div className="relative mx-auto w-full">
         {beneficio ? (
           <p className="break-words font-display text-3xl leading-tight tracking-wide text-gold">
             {beneficio}

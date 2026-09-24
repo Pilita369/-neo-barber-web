@@ -184,7 +184,8 @@ export const marcarAtendido = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("benefits")
         .update({ status: "usado", used_at: new Date().toISOString() })
-        .eq("id", updated.benefit_id);
+        .eq("id", updated.benefit_id)
+        .eq("status", "activo");
     }
     return { ok: true };
   });

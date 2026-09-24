@@ -300,8 +300,9 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar cliente</AlertDialogTitle>
             <AlertDialogDescription>
-              Solo se puede eliminar un cliente sin turnos ni beneficios (por ejemplo, uno creado por
-              error). Si tiene historial, no se borrará nada. ¿Continuar?
+              Solo se puede eliminar un cliente sin turnos ni beneficios usados o vigentes (por
+              ejemplo, uno creado por error). Sus beneficios cancelados o vencidos sin usar se eliminan
+              junto con él. Si tiene historial, no se borrará nada. ¿Continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

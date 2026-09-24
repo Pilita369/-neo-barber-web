@@ -299,7 +299,7 @@ export const createAppointment = createServerFn({ method: "POST" })
         (inUse && inUse.length > 0)
       ) {
         throw new Error(
-          "Este beneficio no se puede aplicar (vencido, ya utilizado o el WhatsApp no coincide).",
+          "Este beneficio no se puede aplicar (vencido, cancelado, ya utilizado o el WhatsApp no coincide).",
         );
       }
       benefitId = benefit.id;

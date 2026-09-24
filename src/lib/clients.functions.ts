@@ -103,7 +103,7 @@ export const getClientProfile = createServerFn({ method: "GET" })
       context.supabase
         .from("benefits")
         .select(
-          "id, token, kind, status, valid_until, created_at, sent_at, used_at, title, message, service_id, discount_percent, discount_amount, services(name)",
+          "id, token, kind, status, valid_until, created_at, sent_at, used_at, cancelled_at, title, message, service_id, discount_percent, discount_amount, services(name)",
         )
         .eq("client_id", data.clientId)
         .order("created_at", { ascending: false }),
@@ -193,8 +193,10 @@ const ESTADO_LABEL: Record<string, string> = {
 
 /**
  * Eliminacion conservadora: solo borra clientes sin turnos (por client_id o por
- * su WhatsApp) ni beneficios. Si hay historial, no borra nada y explica por qué;
- * nunca hace cascada. Las FK de appointments/benefits igual bloquean el borrado.
+ * su WhatsApp) y sin beneficios usados ni activos vigentes. Los beneficios
+ * cancelados o vencidos que nunca se usaron no bloquean: se eliminan uno por
+ * uno justo antes del cliente (la FK lo exige). Nunca hay cascada ni se toca
+ * historial comercial; si algo lo impide, no se borra nada y se explica por qué.
  */
 export const deleteClient = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ clientId: z.string().uuid() }).parse(data))
@@ -210,34 +212,65 @@ export const deleteClient = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!client) throw new Error("Cliente no encontrado");
 
+    const today = todayBA();
     const phoneTail = client.phone_e164.replace(/\D/g, "").slice(-10);
-    const [{ data: porId }, { data: porTelefono }, { count: beneficios }] = await Promise.all([
+    const [{ data: porId }, { data: porTelefono }, { data: beneficios }] = await Promise.all([
       supabaseAdmin.from("appointments").select("id, status").eq("client_id", client.id),
       supabaseAdmin.from("appointments").select("id, status").ilike("client_phone", `%${phoneTail}`),
-      supabaseAdmin
-        .from("benefits")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", client.id),
+      supabaseAdmin.from("benefits").select("id, status, valid_until, used_at").eq("client_id", client.id),
     ]);
     const turnos = new Map<string, string>();
     for (const a of [...(porId ?? []), ...(porTelefono ?? [])]) turnos.set(a.id, a.status);
 
-    if (turnos.size > 0 || (beneficios ?? 0) > 0) {
+    const lista = beneficios ?? [];
+    const usados = lista.filter((b) => b.status === "usado" || b.used_at !== null).length;
+    const vigentes = lista.filter(
+      (b) => b.status === "activo" && b.used_at === null && b.valid_until >= today,
+    ).length;
+    // Cancelados, o activos ya vencidos, que nunca se usaron: no son historial comercial.
+    const descartables = lista
+      .filter(
+        (b) =>
+          b.used_at === null &&
+          (b.status === "cancelado" || (b.status === "activo" && b.valid_until < today)),
+      )
+      .map((b) => b.id);
+    const { data: referenciados } = descartables.length
+      ? await supabaseAdmin.from("appointments").select("id").in("benefit_id", descartables)
+      : { data: [] };
+
+    const partes: string[] = [];
+    if (turnos.size > 0) {
       const porEstado = new Map<string, number>();
       for (const s of turnos.values()) porEstado.set(s, (porEstado.get(s) ?? 0) + 1);
-      const partes: string[] = [];
-      if (turnos.size > 0) {
-        const detalle = [...porEstado.entries()]
-          .map(([s, n]) => `${n} ${ESTADO_LABEL[s] ?? s}`)
-          .join(", ");
-        partes.push(`${turnos.size} turno${turnos.size === 1 ? "" : "s"} (${detalle})`);
-      }
-      if ((beneficios ?? 0) > 0) {
-        partes.push(`${beneficios} beneficio${beneficios === 1 ? "" : "s"}`);
-      }
-      throw new Error(
-        `No se puede eliminar este cliente porque tiene historial: ${partes.join(" y ")}. Se conserva para no perder información.`,
+      const detalle = [...porEstado.entries()].map(([s, n]) => `${n} ${ESTADO_LABEL[s] ?? s}`).join(", ");
+      partes.push(`${turnos.size} turno${turnos.size === 1 ? "" : "s"} (${detalle})`);
+    }
+    if (usados > 0) partes.push(`${usados} beneficio${usados === 1 ? "" : "s"} utilizado${usados === 1 ? "" : "s"}`);
+    if (vigentes > 0) {
+      partes.push(
+        `${vigentes} beneficio${vigentes === 1 ? "" : "s"} activo${vigentes === 1 ? "" : "s"} que todavía se puede${vigentes === 1 ? "" : "n"} usar (cancelalo${vigentes === 1 ? "" : "s"} primero si fue un error)`,
       );
+    }
+    if ((referenciados ?? []).length > 0) partes.push("beneficios aplicados a turnos");
+    if (partes.length > 0) {
+      throw new Error(
+        `No se puede eliminar este cliente porque tiene: ${partes.join("; ")}. Se conserva para no perder información.`,
+      );
+    }
+
+    if (descartables.length > 0) {
+      const { data: borrados, error: benefitsError } = await supabaseAdmin
+        .from("benefits")
+        .delete()
+        .in("id", descartables)
+        .eq("client_id", client.id)
+        .is("used_at", null)
+        .neq("status", "usado")
+        .select("id");
+      if (benefitsError || (borrados ?? []).length !== descartables.length) {
+        throw new Error("No se pudo eliminar el cliente: no se pudieron limpiar sus beneficios sin uso.");
+      }
     }
 
     const { error } = await supabaseAdmin.from("clients").delete().eq("id", client.id);

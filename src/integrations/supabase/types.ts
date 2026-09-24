@@ -155,6 +155,7 @@ export type Database = {
       }
       benefits: {
         Row: {
+          cancelled_at: string | null
           client_id: string
           created_at: string
           discount_amount: number | null
@@ -171,6 +172,7 @@ export type Database = {
           valid_until: string
         }
         Insert: {
+          cancelled_at?: string | null
           client_id: string
           created_at?: string
           discount_amount?: number | null
@@ -187,6 +189,7 @@ export type Database = {
           valid_until: string
         }
         Update: {
+          cancelled_at?: string | null
           client_id?: string
           created_at?: string
           discount_amount?: number | null

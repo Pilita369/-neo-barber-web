@@ -1,4 +1,4 @@
-import type { BenefitKind } from "./loyalty";
+import type { BenefitKind, StoredBenefitStatus } from "./loyalty";
 export type { BenefitKind };
 
 export interface Service {
@@ -61,11 +61,12 @@ export interface ClientBenefit {
   id: string;
   token: string;
   kind: BenefitKind;
-  status: "activo" | "usado";
+  status: StoredBenefitStatus;
   valid_until: string;
   created_at: string;
   sent_at: string | null;
   used_at: string | null;
+  cancelled_at: string | null;
   title: string | null;
   message: string | null;
   service_id: string | null;

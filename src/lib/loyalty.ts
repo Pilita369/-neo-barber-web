@@ -13,7 +13,9 @@ export type BenefitKind =
   | "amount_off"
   | "prepaid_gift";
 
-export type BenefitStatus = "activo" | "usado" | "vencido";
+/** Estado guardado en la base. "vencido" no se guarda: se calcula por fecha. */
+export type StoredBenefitStatus = "activo" | "usado" | "cancelado";
+export type BenefitStatus = StoredBenefitStatus | "vencido";
 
 /** Los 3 tipos que puede generar automaticamente la regla de fidelizacion. */
 export const LOYALTY_BENEFIT_KINDS: Extract<BenefitKind, "percent_20" | "percent_50" | "free_cut">[] =
@@ -28,6 +30,7 @@ export const BENEFIT_LABEL: Record<"percent_20" | "percent_50" | "free_cut", { t
 export const BENEFIT_STATUS_LABEL: Record<BenefitStatus, string> = {
   activo: "Activo",
   usado: "Usado",
+  cancelado: "Cancelado",
   vencido: "Vencido",
 };
 
@@ -72,11 +75,11 @@ export function benefitDisplayBig(b: BenefitLike): string {
 
 /** "vencido" no se guarda: se calcula por fecha (valid_until inclusive). */
 export function effectiveBenefitStatus(
-  status: "activo" | "usado",
+  status: StoredBenefitStatus,
   validUntil: string,
   today: string,
 ): BenefitStatus {
-  if (status === "usado") return "usado";
+  if (status === "usado" || status === "cancelado") return status;
   return validUntil < today ? "vencido" : "activo";
 }
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { todayBA } from "./datetime";
 import { toPhoneE164 } from "./phone";
-import { effectiveBenefitStatus, type BenefitKind } from "./loyalty";
+import { effectiveBenefitStatus, type BenefitKind, type StoredBenefitStatus } from "./loyalty";
 
 type Ctx = { context: { supabase: any; userId: string } };
 
@@ -107,6 +107,74 @@ export const markBenefitSent = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Beneficio activo que el admin puede resolver a mano. Si esta aplicado a un
+ * turno pendiente/confirmado, se bloquea: ese turno lo consume al marcarse
+ * atendido o lo libera al cancelarse, y resolverlo antes dejaria el turno
+ * inconsistente.
+ */
+async function loadResolvableBenefit(supabase: any, benefitId: string) {
+  const { data: benefit } = await supabase
+    .from("benefits")
+    .select("id, status, valid_until")
+    .eq("id", benefitId)
+    .maybeSingle();
+  if (!benefit) throw new Error("Beneficio no encontrado");
+  if (benefit.status === "usado") throw new Error("Este beneficio ya fue utilizado.");
+  if (benefit.status === "cancelado") throw new Error("Este beneficio ya está cancelado.");
+  const { data: turno } = await supabase
+    .from("appointments")
+    .select("date, start_time")
+    .eq("benefit_id", benefitId)
+    .in("status", ["pendiente", "confirmado"])
+    .limit(1)
+    .maybeSingle();
+  if (turno) {
+    const [y, m, d] = String(turno.date).split("-");
+    throw new Error(
+      `Este beneficio está aplicado al turno del ${d}/${m}/${y} a las ${String(turno.start_time).slice(0, 5)} h. Se consume al marcar ese turno como atendido, o se libera si el turno se cancela.`,
+    );
+  }
+  return benefit as { id: string; status: "activo"; valid_until: string };
+}
+
+export const markBenefitUsed = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ benefitId: z.string().uuid() }).parse(data))
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }: { data: { benefitId: string } } & Ctx) => {
+    await assertAdmin(context);
+    const supabase = await adminClient();
+    const benefit = await loadResolvableBenefit(supabase, data.benefitId);
+    if (benefit.valid_until < todayBA()) {
+      throw new Error("Este beneficio está vencido: no se puede marcar como utilizado.");
+    }
+    const { data: updated } = await supabase
+      .from("benefits")
+      .update({ status: "usado", used_at: new Date().toISOString() })
+      .eq("id", benefit.id)
+      .eq("status", "activo")
+      .select("id");
+    if (!updated || updated.length !== 1) throw new Error("No se pudo marcar el beneficio como utilizado");
+    return { ok: true };
+  });
+
+export const cancelBenefit = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ benefitId: z.string().uuid() }).parse(data))
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }: { data: { benefitId: string } } & Ctx) => {
+    await assertAdmin(context);
+    const supabase = await adminClient();
+    const benefit = await loadResolvableBenefit(supabase, data.benefitId);
+    const { data: updated } = await supabase
+      .from("benefits")
+      .update({ status: "cancelado", cancelled_at: new Date().toISOString() })
+      .eq("id", benefit.id)
+      .eq("status", "activo")
+      .select("id");
+    if (!updated || updated.length !== 1) throw new Error("No se pudo cancelar el beneficio");
+    return { ok: true };
+  });
+
 /** Publico: devuelve solo lo minimo para mostrar la tarjeta. Nunca IDs ni telefono. */
 export const getBenefitPublic = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ token: z.string().uuid() }).parse(data))
@@ -133,7 +201,7 @@ export const getBenefitPublic = createServerFn({ method: "GET" })
         discount_amount: benefit.discount_amount as number | null,
         service_name: service?.name ?? null,
         status: effectiveBenefitStatus(
-          benefit.status as "activo" | "usado",
+          benefit.status as StoredBenefitStatus,
           benefit.valid_until as string,
           todayBA(),
         ),
