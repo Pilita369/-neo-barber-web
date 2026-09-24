@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import type { Service } from "@/lib/types";
+import logoNeo from "@/assets/logo-neo.png";
 
 export const Route = createFileRoute("/panel/promociones")({
   head: () => ({ meta: [{ title: "Promociones — Neo Barbería" }] }),
@@ -189,8 +190,16 @@ function PromoCard({
       }}
     >
       <div>
-        <p className="font-display text-xs tracking-[0.35em] text-gold">NEO BARBERÍA</p>
-        <h2 className="mt-8 break-words font-display text-4xl leading-none tracking-wide">
+        <img
+          src={logoNeo}
+          alt="Neo Barbería"
+          width={96}
+          height={96}
+          draggable={false}
+          className="mx-auto size-24 object-contain"
+        />
+        <p className="mt-2 pl-[0.35em] font-display text-xs tracking-[0.35em] text-gold">NEO BARBERÍA</p>
+        <h2 className="mt-5 break-words font-display text-4xl leading-none tracking-wide">
           <span className="text-gradient-fucsia">{titulo || "NEO BARBERÍA"}</span>
         </h2>
         {frase ? <p className="mt-3 text-base text-muted-foreground">{frase}</p> : null}

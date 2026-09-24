@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, MessageCircle, Plus, Star } from "lucide-react";
-import { getClientProfile, getClientMonth } from "@/lib/clients.functions";
+import { toast } from "sonner";
+import { ArrowLeft, Loader2, MessageCircle, Plus, Star, Trash2 } from "lucide-react";
+import { getClientProfile, getClientMonth, deleteClient } from "@/lib/clients.functions";
 import { listServices, getSettings } from "@/lib/admin.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
@@ -13,6 +14,16 @@ import { ClientBenefits } from "@/components/client-benefits";
 import { formatARS } from "@/lib/format";
 import { isEligibleForBenefit, loyaltyRelevantVisits } from "@/lib/loyalty";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { ClientMonthAppointment, Service, Settings } from "@/lib/types";
 import { fechaLarga, waLink } from "@/lib/datetime";
 
@@ -76,6 +87,27 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [nuevoTurnoOpen, setNuevoTurnoOpen] = useState(false);
+  const [eliminarOpen, setEliminarOpen] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const deleteClientFn = useServerFn(deleteClient);
+  const navigate = useNavigate();
+
+  async function confirmarEliminar() {
+    setEliminando(true);
+    try {
+      await deleteClientFn({ data: { clientId: id } });
+      queryClient.removeQueries({ queryKey: ["cliente", id] });
+      queryClient.removeQueries({ queryKey: ["cliente-mes", id] });
+      await queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      toast.success("Cliente eliminado");
+      navigate({ to: "/panel/clientes" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo eliminar el cliente", { duration: 10000 });
+    } finally {
+      setEliminando(false);
+      setEliminarOpen(false);
+    }
+  }
 
   const monthQuery = useQuery({
     queryKey: ["cliente-mes", id, viewedMonth.year, viewedMonth.month],
@@ -237,6 +269,15 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
               </div>
             ) : null}
           </section>
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => setEliminarOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:text-destructive hover:underline"
+            >
+              <Trash2 className="size-3.5" /> Eliminar cliente
+            </button>
+          </div>
         </>
       )}
 
@@ -253,6 +294,31 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           queryClient.invalidateQueries({ queryKey: ["cliente-mes", id] });
         }}
       />
+
+      <AlertDialog open={eliminarOpen} onOpenChange={(v) => !eliminando && setEliminarOpen(v)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Solo se puede eliminar un cliente sin turnos ni beneficios (por ejemplo, uno creado por
+              error). Si tiene historial, no se borrará nada. ¿Continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={eliminando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={eliminando}
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmarEliminar();
+              }}
+            >
+              {eliminando ? <Loader2 className="size-4 animate-spin" /> : null}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

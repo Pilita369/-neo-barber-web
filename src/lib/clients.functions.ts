@@ -182,3 +182,67 @@ export const getClientMonth = createServerFn({ method: "GET" })
     }));
     return result;
   });
+
+const ESTADO_LABEL: Record<string, string> = {
+  atendido: "atendido",
+  pendiente: "pendiente",
+  confirmado: "confirmado",
+  cancelado: "cancelado",
+  no_asistio: "no asistió",
+};
+
+/**
+ * Eliminacion conservadora: solo borra clientes sin turnos (por client_id o por
+ * su WhatsApp) ni beneficios. Si hay historial, no borra nada y explica por qué;
+ * nunca hace cascada. Las FK de appointments/benefits igual bloquean el borrado.
+ */
+export const deleteClient = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ clientId: z.string().uuid() }).parse(data))
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }: { data: { clientId: string } } & Ctx) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: client } = await supabaseAdmin
+      .from("clients")
+      .select("id, phone_e164")
+      .eq("id", data.clientId)
+      .maybeSingle();
+    if (!client) throw new Error("Cliente no encontrado");
+
+    const phoneTail = client.phone_e164.replace(/\D/g, "").slice(-10);
+    const [{ data: porId }, { data: porTelefono }, { count: beneficios }] = await Promise.all([
+      supabaseAdmin.from("appointments").select("id, status").eq("client_id", client.id),
+      supabaseAdmin.from("appointments").select("id, status").ilike("client_phone", `%${phoneTail}`),
+      supabaseAdmin
+        .from("benefits")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", client.id),
+    ]);
+    const turnos = new Map<string, string>();
+    for (const a of [...(porId ?? []), ...(porTelefono ?? [])]) turnos.set(a.id, a.status);
+
+    if (turnos.size > 0 || (beneficios ?? 0) > 0) {
+      const porEstado = new Map<string, number>();
+      for (const s of turnos.values()) porEstado.set(s, (porEstado.get(s) ?? 0) + 1);
+      const partes: string[] = [];
+      if (turnos.size > 0) {
+        const detalle = [...porEstado.entries()]
+          .map(([s, n]) => `${n} ${ESTADO_LABEL[s] ?? s}`)
+          .join(", ");
+        partes.push(`${turnos.size} turno${turnos.size === 1 ? "" : "s"} (${detalle})`);
+      }
+      if ((beneficios ?? 0) > 0) {
+        partes.push(`${beneficios} beneficio${beneficios === 1 ? "" : "s"}`);
+      }
+      throw new Error(
+        `No se puede eliminar este cliente porque tiene historial: ${partes.join(" y ")}. Se conserva para no perder información.`,
+      );
+    }
+
+    const { error } = await supabaseAdmin.from("clients").delete().eq("id", client.id);
+    if (error) {
+      throw new Error("No se pudo eliminar el cliente: tiene información relacionada que se conserva.");
+    }
+    return { ok: true };
+  });
