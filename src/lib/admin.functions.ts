@@ -137,7 +137,7 @@ export const getAgendaMonth = createServerFn({ method: "GET" })
     const { data: appts } = await context.supabase
       .from("appointments")
       .select(
-        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, price_at_booking, charged_amount, benefit_id, benefits(kind), services(name, duration_min)",
+        "id, code, client_name, client_lastname, client_phone, notes, date, start_time, end_time, status, needs_approval, service_id, price_at_booking, charged_amount, benefit_id, benefits(kind, discount_percent, discount_amount), services(name, duration_min)",
       )
       .eq("professional_id", professionalId)
       .gte("date", from)
@@ -151,6 +151,8 @@ export const getAgendaMonth = createServerFn({ method: "GET" })
       end_time: String(a.end_time).slice(0, 5),
       service_name: a.services?.name ?? "",
       benefit_kind: a.benefits?.kind ?? null,
+      benefit_discount_percent: a.benefits?.discount_percent ?? null,
+      benefit_discount_amount: a.benefits?.discount_amount ?? null,
     }));
     return { appointments };
   });
@@ -366,7 +368,7 @@ export const createManualAppointment = createServerFn({ method: "POST" })
       throw new Error("No se pudo crear el turno");
     }
     const a = Array.isArray(appt) ? appt[0] : appt;
-    return { id: a.id, token: a.token };
+    return { id: a.id, token: a.token, price_at_booking: a.price_at_booking as number | null };
   });
 
 const blockSchema = z.object({
@@ -568,6 +570,10 @@ const settingsSchema = z.object({
     .max(80)
     .nullable()
     .or(z.literal("").transform(() => null)),
+  loyalty_enabled: z.boolean(),
+  loyalty_mode: z.enum(["monthly", "cumulative"]),
+  loyalty_visits_required: z.number().int().min(1).max(99),
+  loyalty_benefit_kind: z.enum(["percent_20", "percent_50", "free_cut"]),
 });
 
 export const getSettings = createServerFn({ method: "GET" })
@@ -576,6 +582,28 @@ export const getSettings = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const { data } = await context.supabase.from("business_settings").select("*").eq("id", 1).single();
     return data;
+  });
+
+export const getScheduleConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }: Ctx) => {
+    await assertAdmin(context);
+    const professionalId = await getProfessionalId(context.supabase);
+    const today = todayBA();
+    const [{ data: hours }, { data: exceptions }] = await Promise.all([
+      context.supabase
+        .from("business_hours")
+        .select("*")
+        .eq("professional_id", professionalId)
+        .order("weekday"),
+      context.supabase
+        .from("availability_exceptions")
+        .select("*")
+        .eq("professional_id", professionalId)
+        .gte("date", today)
+        .order("date"),
+    ]);
+    return { hours: hours ?? [], exceptions: exceptions ?? [] };
   });
 
 export const saveSettings = createServerFn({ method: "POST" })

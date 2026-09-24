@@ -65,7 +65,7 @@ function AuthPage() {
             onChange={(e) => setPin(e.target.value)}
             type="password"
             inputMode="numeric"
-            maxLength={6}
+            maxLength={8}
             className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 text-base tracking-[0.3em] outline-none focus:ring-2 focus:ring-ring"
           />
         </label>

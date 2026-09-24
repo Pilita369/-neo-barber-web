@@ -33,7 +33,7 @@ export function NuevoTurnoDialog({
   onOpenChange: (open: boolean) => void;
   services: Service[];
   clienteInicial?: ClienteInicial;
-  paymentAlias?: string | null;
+  paymentAlias?: string | null | undefined;
   onCreated?: () => void;
 }) {
   const activos = services.filter((s) => s.active);
@@ -48,7 +48,9 @@ export function NuevoTurnoDialog({
   const [time, setTime] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [saving, setSaving] = useState(false);
-  const [resultado, setResultado] = useState<{ token: string } | null>(null);
+  const [resultado, setResultado] = useState<{ token: string; price_at_booking: number | null } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -105,7 +107,7 @@ export function NuevoTurnoDialog({
     serviceName: servicioElegido?.name ?? "",
     date,
     time,
-    price: servicioElegido?.price ?? null,
+    price: resultado?.price_at_booking ?? null,
     paymentAlias,
     link: linkTurno,
   });

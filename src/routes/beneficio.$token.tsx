@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Scissors } from "lucide-react";
 import { getBenefitPublic } from "@/lib/benefits.functions";
-import { BENEFIT_LABEL, BENEFIT_STATUS_LABEL } from "@/lib/loyalty";
+import { BENEFIT_STATUS_LABEL, benefitDisplayBig } from "@/lib/loyalty";
 import { SiteFooter } from "@/components/site-footer";
 
 export const Route = createFileRoute("/beneficio/$token")({
@@ -49,6 +49,7 @@ function BeneficioPage() {
   }
 
   const activo = b.status === "activo";
+  const subtitulo = b.kind === "prepaid_gift" ? "Voucher regalo" : "Beneficio exclusivo";
 
   return (
     <main className="mx-auto min-h-screen max-w-md px-5 pb-10 pt-8">
@@ -63,17 +64,18 @@ function BeneficioPage() {
       >
         <p className="font-display text-sm tracking-[0.35em] text-gold">NEO BARBERÍA</p>
         <p className="mt-6 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-          Beneficio exclusivo
+          {b.title || subtitulo}
         </p>
         {b.first_name ? (
           <p className="mt-4 font-display text-4xl tracking-wide">{b.first_name}</p>
         ) : null}
-        <p className="mt-4 font-display text-6xl leading-none tracking-wide">
-          <span className="text-gradient-fucsia">{BENEFIT_LABEL[b.kind].big}</span>
+        <p className="mt-4 font-display text-5xl leading-none tracking-wide">
+          <span className="text-gradient-fucsia">{benefitDisplayBig(b)}</span>
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
-          En tu próximo corte
+          {b.service_name ? `Válido para: ${b.service_name}` : "En tu próximo corte"}
         </p>
+        {b.message ? <p className="mt-3 text-sm">{b.message}</p> : null}
         <div className="mx-auto mt-6 h-px w-24 bg-gold/40" />
         <p className="mt-4 text-sm">
           Válido hasta{" "}

@@ -102,7 +102,9 @@ export const getClientProfile = createServerFn({ method: "GET" })
         .order("date", { ascending: false }),
       context.supabase
         .from("benefits")
-        .select("id, token, kind, status, valid_until, created_at, sent_at, used_at")
+        .select(
+          "id, token, kind, status, valid_until, created_at, sent_at, used_at, title, message, service_id, discount_percent, discount_amount, services(name)",
+        )
         .eq("client_id", data.clientId)
         .order("created_at", { ascending: false }),
     ]);
@@ -142,7 +144,7 @@ export const getClientProfile = createServerFn({ method: "GET" })
       gastado_historico: gastadoHistorico,
       sin_importe_mes: sinImporteMes,
       sin_importe_historico: sinImporteHistorico,
-      benefits: (benefits ?? []) as ClientProfile["benefits"],
+      benefits: (benefits ?? []).map((b: any) => ({ ...b, service_name: b.services?.name ?? null })) as ClientProfile["benefits"],
     };
     return profile;
   });

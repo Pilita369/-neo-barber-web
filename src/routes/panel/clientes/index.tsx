@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Gift, Loader2, Search } from "lucide-react";
 import { listClients } from "@/lib/clients.functions";
+import { listServices } from "@/lib/admin.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
 import { SiteFooter } from "@/components/site-footer";
+import { BeneficioDialog } from "@/components/beneficio-dialog";
 import { fechaLarga } from "@/lib/datetime";
+import type { Service } from "@/lib/types";
 
 export const Route = createFileRoute("/panel/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — Neo Barbería" }] }),
@@ -40,9 +43,12 @@ function ClientesPage() {
 }
 
 function ClientList({ onCerrarSesion }: { onCerrarSesion: () => void }) {
+  const queryClient = useQueryClient();
   const listClientsFn = useServerFn(listClients);
+  const listServicesFn = useServerFn(listServices);
   const [inputValue, setInputValue] = useState("");
   const [search, setSearch] = useState("");
+  const [beneficioOpen, setBeneficioOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(inputValue.trim()), 300);
@@ -54,10 +60,23 @@ function ClientList({ onCerrarSesion }: { onCerrarSesion: () => void }) {
     queryFn: () => listClientsFn({ data: { search: search || undefined } }),
   });
 
+  const servicesQuery = useQuery({
+    queryKey: ["servicios"],
+    queryFn: () => listServicesFn() as Promise<Service[]>,
+  });
+
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-5 pb-16">
       <PanelNav onCerrarSesion={onCerrarSesion} />
-      <h1 className="mt-5 font-display text-3xl tracking-wide">Clientes</h1>
+      <div className="mt-5 flex items-center justify-between gap-3">
+        <h1 className="font-display text-3xl tracking-wide">Clientes</h1>
+        <button
+          onClick={() => setBeneficioOpen(true)}
+          className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+        >
+          <Gift className="size-3.5" /> Beneficio / Voucher
+        </button>
+      </div>
 
       <label className="mt-4 block">
         <span className="sr-only">Buscar cliente</span>
@@ -112,6 +131,13 @@ function ClientList({ onCerrarSesion }: { onCerrarSesion: () => void }) {
       )}
 
       <SiteFooter />
+
+      <BeneficioDialog
+        open={beneficioOpen}
+        onOpenChange={setBeneficioOpen}
+        services={servicesQuery.data ?? []}
+        onCreated={() => queryClient.invalidateQueries({ queryKey: ["clientes"] })}
+      />
     </main>
   );
 }

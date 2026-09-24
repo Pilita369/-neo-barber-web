@@ -14,6 +14,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as BeneficioTokenRouteImport } from './routes/beneficio.$token'
 import { Route as PanelIndexRouteImport } from './routes/panel/index'
+import { Route as PanelConfiguracionRouteImport } from './routes/panel/configuracion'
+import { Route as PanelPromocionesRouteImport } from './routes/panel/promociones'
 import { Route as PanelServiciosRouteImport } from './routes/panel/servicios'
 import { Route as TurnoTokenRouteImport } from './routes/turno.$token'
 import { Route as PanelClientesIndexRouteImport } from './routes/panel/clientes/index'
@@ -44,6 +46,16 @@ const PanelIndexRoute = PanelIndexRouteImport.update({
   path: '/panel/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PanelConfiguracionRoute = PanelConfiguracionRouteImport.update({
+  id: '/panel/configuracion',
+  path: '/panel/configuracion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelPromocionesRoute = PanelPromocionesRouteImport.update({
+  id: '/panel/promociones',
+  path: '/panel/promociones',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PanelServiciosRoute = PanelServiciosRouteImport.update({
   id: '/panel/servicios',
   path: '/panel/servicios',
@@ -70,6 +82,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reservar': typeof ReservarRoute
   '/beneficio/$token': typeof BeneficioTokenRoute
+  '/panel/configuracion': typeof PanelConfiguracionRoute
+  '/panel/promociones': typeof PanelPromocionesRoute
   '/panel/servicios': typeof PanelServiciosRoute
   '/turno/$token': typeof TurnoTokenRoute
   '/panel/': typeof PanelIndexRoute
@@ -81,6 +95,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reservar': typeof ReservarRoute
   '/beneficio/$token': typeof BeneficioTokenRoute
+  '/panel/configuracion': typeof PanelConfiguracionRoute
+  '/panel/promociones': typeof PanelPromocionesRoute
   '/panel/servicios': typeof PanelServiciosRoute
   '/turno/$token': typeof TurnoTokenRoute
   '/panel': typeof PanelIndexRoute
@@ -93,6 +109,8 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reservar': typeof ReservarRoute
   '/beneficio/$token': typeof BeneficioTokenRoute
+  '/panel/configuracion': typeof PanelConfiguracionRoute
+  '/panel/promociones': typeof PanelPromocionesRoute
   '/panel/servicios': typeof PanelServiciosRoute
   '/turno/$token': typeof TurnoTokenRoute
   '/panel/': typeof PanelIndexRoute
@@ -106,6 +124,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reservar'
     | '/beneficio/$token'
+    | '/panel/configuracion'
+    | '/panel/promociones'
     | '/panel/servicios'
     | '/turno/$token'
     | '/panel/'
@@ -117,6 +137,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reservar'
     | '/beneficio/$token'
+    | '/panel/configuracion'
+    | '/panel/promociones'
     | '/panel/servicios'
     | '/turno/$token'
     | '/panel'
@@ -128,6 +150,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reservar'
     | '/beneficio/$token'
+    | '/panel/configuracion'
+    | '/panel/promociones'
     | '/panel/servicios'
     | '/turno/$token'
     | '/panel/'
@@ -140,6 +164,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ReservarRoute: typeof ReservarRoute
   BeneficioTokenRoute: typeof BeneficioTokenRoute
+  PanelConfiguracionRoute: typeof PanelConfiguracionRoute
+  PanelPromocionesRoute: typeof PanelPromocionesRoute
   PanelServiciosRoute: typeof PanelServiciosRoute
   TurnoTokenRoute: typeof TurnoTokenRoute
   PanelIndexRoute: typeof PanelIndexRoute
@@ -184,6 +210,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/panel/configuracion': {
+      id: '/panel/configuracion'
+      path: '/panel/configuracion'
+      fullPath: '/panel/configuracion'
+      preLoaderRoute: typeof PanelConfiguracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/promociones': {
+      id: '/panel/promociones'
+      path: '/panel/promociones'
+      fullPath: '/panel/promociones'
+      preLoaderRoute: typeof PanelPromocionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/panel/servicios': {
       id: '/panel/servicios'
       path: '/panel/servicios'
@@ -220,6 +260,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ReservarRoute: ReservarRoute,
   BeneficioTokenRoute: BeneficioTokenRoute,
+  PanelConfiguracionRoute: PanelConfiguracionRoute,
+  PanelPromocionesRoute: PanelPromocionesRoute,
   PanelServiciosRoute: PanelServiciosRoute,
   TurnoTokenRoute: TurnoTokenRoute,
   PanelIndexRoute: PanelIndexRoute,

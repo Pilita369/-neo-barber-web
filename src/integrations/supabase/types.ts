@@ -157,10 +157,15 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string
+          discount_amount: number | null
+          discount_percent: number | null
           id: string
           kind: string
+          message: string | null
           sent_at: string | null
+          service_id: string | null
           status: string
+          title: string | null
           token: string
           used_at: string | null
           valid_until: string
@@ -168,10 +173,15 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string
+          discount_amount?: number | null
+          discount_percent?: number | null
           id?: string
           kind: string
+          message?: string | null
           sent_at?: string | null
+          service_id?: string | null
           status?: string
+          title?: string | null
           token?: string
           used_at?: string | null
           valid_until: string
@@ -179,10 +189,15 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string
+          discount_amount?: number | null
+          discount_percent?: number | null
           id?: string
           kind?: string
+          message?: string | null
           sent_at?: string | null
+          service_id?: string | null
           status?: string
+          title?: string | null
           token?: string
           used_at?: string | null
           valid_until?: string
@@ -193,6 +208,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefits_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
@@ -248,6 +270,10 @@ export type Database = {
           cancel_hours_limit: number
           id: number
           instagram_url: string | null
+          loyalty_benefit_kind: string
+          loyalty_enabled: boolean
+          loyalty_mode: string
+          loyalty_visits_required: number
           max_days_ahead: number
           min_advance_hours: number
           payment_alias: string | null
@@ -261,6 +287,10 @@ export type Database = {
           cancel_hours_limit?: number
           id?: number
           instagram_url?: string | null
+          loyalty_benefit_kind?: string
+          loyalty_enabled?: boolean
+          loyalty_mode?: string
+          loyalty_visits_required?: number
           max_days_ahead?: number
           min_advance_hours?: number
           payment_alias?: string | null
@@ -274,6 +304,10 @@ export type Database = {
           cancel_hours_limit?: number
           id?: number
           instagram_url?: string | null
+          loyalty_benefit_kind?: string
+          loyalty_enabled?: boolean
+          loyalty_mode?: string
+          loyalty_visits_required?: number
           max_days_ahead?: number
           min_advance_hours?: number
           payment_alias?: string | null

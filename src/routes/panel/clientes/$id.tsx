@@ -4,16 +4,16 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2, MessageCircle, Plus, Star } from "lucide-react";
 import { getClientProfile, getClientMonth } from "@/lib/clients.functions";
-import { listServices } from "@/lib/admin.functions";
+import { listServices, getSettings } from "@/lib/admin.functions";
 import { usePanelAuth } from "@/lib/use-panel-auth";
 import { PanelNav } from "@/components/panel-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { NuevoTurnoDialog } from "@/components/nuevo-turno-dialog";
 import { ClientBenefits } from "@/components/client-benefits";
 import { formatARS } from "@/lib/format";
-import { isFrequentClient } from "@/lib/loyalty";
+import { isEligibleForBenefit, loyaltyRelevantVisits } from "@/lib/loyalty";
 import { Calendar } from "@/components/ui/calendar";
-import type { ClientMonthAppointment, Service } from "@/lib/types";
+import type { ClientMonthAppointment, Service, Settings } from "@/lib/types";
 import { fechaLarga, waLink } from "@/lib/datetime";
 
 export const Route = createFileRoute("/panel/clientes/$id")({
@@ -61,6 +61,12 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   const servicesQuery = useQuery({
     queryKey: ["servicios"],
     queryFn: () => listServicesFn() as Promise<Service[]>,
+  });
+
+  const getSettingsFn = useServerFn(getSettings);
+  const settingsQuery = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => getSettingsFn() as Promise<Settings>,
   });
 
   const getClientMonthFn = useServerFn(getClientMonth);
@@ -131,13 +137,16 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
             </p>
           </section>
 
-          {isFrequentClient(q.data.visitas_mes) ? (
+          {settingsQuery.data &&
+          isEligibleForBenefit(settingsQuery.data, q.data.visitas_mes, q.data.total_completados) ? (
             <div className="mt-4 rounded-xl border border-gold/50 bg-accent p-4">
               <p className="flex items-center gap-1.5 font-display text-xl tracking-wide text-gold">
-                <Star className="size-4 fill-current" /> CLIENTE FRECUENTE
+                <Star className="size-4 fill-current" /> CLIENTE HABILITADO PARA BENEFICIO
               </p>
               <p className="text-sm">
-                {q.data.visitas_mes} visitas este mes · Beneficio disponible
+                {loyaltyRelevantVisits(settingsQuery.data, q.data.visitas_mes, q.data.total_completados)}{" "}
+                visitas {settingsQuery.data.loyalty_mode === "cumulative" ? "acumuladas" : "este mes"} ·
+                Podés crear un beneficio cuando quieras
               </p>
             </div>
           ) : null}
@@ -188,10 +197,10 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
           <ClientBenefits
             clientId={q.data.client.id}
             clientName={q.data.client.name}
+            clientLastname={q.data.client.lastname}
             phone={q.data.client.phone_e164}
             benefits={q.data.benefits}
-            visitasMes={q.data.visitas_mes}
-            canCreate={isFrequentClient(q.data.visitas_mes)}
+            services={servicesQuery.data ?? []}
             onChanged={() => queryClient.invalidateQueries({ queryKey: ["cliente", id] })}
           />
 
@@ -238,6 +247,7 @@ function ClientProfile({ onCerrarSesion }: { onCerrarSesion: () => void }) {
         onOpenChange={setNuevoTurnoOpen}
         services={servicesQuery.data ?? []}
         clienteInicial={q.data ? { ...q.data.client } : null}
+        paymentAlias={settingsQuery.data?.payment_alias}
         onCreated={() => {
           queryClient.invalidateQueries({ queryKey: ["cliente", id] });
           queryClient.invalidateQueries({ queryKey: ["cliente-mes", id] });

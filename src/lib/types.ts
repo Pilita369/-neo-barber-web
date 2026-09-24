@@ -1,3 +1,6 @@
+import type { BenefitKind } from "./loyalty";
+export type { BenefitKind };
+
 export interface Service {
   id: string;
   name: string;
@@ -21,6 +24,10 @@ export interface Settings {
   max_days_ahead: number;
   cancel_hours_limit: number;
   payment_alias: string | null;
+  loyalty_enabled: boolean;
+  loyalty_mode: "monthly" | "cumulative";
+  loyalty_visits_required: number;
+  loyalty_benefit_kind: "percent_20" | "percent_50" | "free_cut";
 }
 
 export interface Professional {
@@ -53,12 +60,18 @@ export interface ClientNextAppointment {
 export interface ClientBenefit {
   id: string;
   token: string;
-  kind: "percent_20" | "percent_50" | "free_cut";
+  kind: BenefitKind;
   status: "activo" | "usado";
   valid_until: string;
   created_at: string;
   sent_at: string | null;
   used_at: string | null;
+  title: string | null;
+  message: string | null;
+  service_id: string | null;
+  service_name?: string | null;
+  discount_percent: number | null;
+  discount_amount: number | null;
 }
 
 export interface ClientProfile {
@@ -114,6 +127,8 @@ export interface Appointment {
   price_at_booking?: number | null;
   charged_amount?: number | null;
   benefit_kind?: string | null;
+  benefit_discount_percent?: number | null;
+  benefit_discount_amount?: number | null;
 }
 
 export interface TimeBlock {

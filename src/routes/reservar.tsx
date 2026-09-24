@@ -11,8 +11,9 @@ import {
   createAppointment,
 } from "@/lib/public.functions";
 import { getBenefitPublic } from "@/lib/benefits.functions";
-import { BENEFIT_LABEL } from "@/lib/loyalty";
+import { benefitDisplayBig } from "@/lib/loyalty";
 import { diaCorto, diaNumero, fechaLarga } from "@/lib/datetime";
+import { formatARS } from "@/lib/format";
 import type { Service } from "@/lib/types";
 
 const bookingDataQuery = queryOptions({
@@ -156,7 +157,7 @@ function Reservar() {
           {beneficioActivo && beneficioQuery.data.benefit ? (
             <p>
               <span className="font-semibold text-gold">
-                Beneficio aplicado: {BENEFIT_LABEL[beneficioQuery.data.benefit.kind].big}
+                Beneficio aplicado: {benefitDisplayBig(beneficioQuery.data.benefit)}
               </span>{" "}
               en tu próximo corte. Reservá con el mismo WhatsApp con el que David te lo envió.
             </p>
@@ -197,10 +198,8 @@ function Reservar() {
             >
               <div className="flex items-baseline justify-between gap-3">
                 <span className="font-semibold">{s.name}</span>
-                {s.show_price && s.price !== null ? (
-                  <span className="font-display text-lg text-gold">
-                    ${Number(s.price).toLocaleString("es-AR")}
-                  </span>
+                {s.price !== null ? (
+                  <span className="font-display text-lg text-gold">{formatARS(s.price)}</span>
                 ) : null}
               </div>
               {s.description ? (

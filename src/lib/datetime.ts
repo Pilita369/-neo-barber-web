@@ -101,6 +101,11 @@ export function diaNombre(dateStr: string): string {
   return DIAS[weekdayOf(dateStr)] ?? "";
 }
 
+/** Nombre del día por índice (0=domingo..6=sábado), sin depender de una fecha. */
+export function nombreDiaSemana(weekday: number): string {
+  return DIAS[weekday] ?? "";
+}
+
 export function diaNumero(dateStr: string): number {
   return Number(dateStr.split("-")[2]);
 }

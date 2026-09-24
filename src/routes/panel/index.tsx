@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatARS } from "@/lib/format";
 import { buildTurnoConfirmationMessage } from "@/lib/messages";
-import { BENEFIT_LABEL, suggestedAmount, type BenefitKind } from "@/lib/loyalty";
+import { benefitDisplayTitle, suggestedAmount, type BenefitKind } from "@/lib/loyalty";
 import { cn } from "@/lib/utils";
 import { addDays, fechaCorta, fechaLarga, nombreMes, todayBA, waLink } from "@/lib/datetime";
 import { ESTADOS, type Appointment, type AppointmentStatus } from "@/lib/types";
@@ -142,7 +142,15 @@ function TurnoCard({
       {appt.notes ? <p className="mt-1 text-xs text-muted-foreground">Nota: {appt.notes}</p> : null}
       {appt.benefit_kind ? (
         <p className="mt-1 text-xs font-semibold text-gold">
-          Beneficio asociado: {BENEFIT_LABEL[appt.benefit_kind as BenefitKind].title}
+          Beneficio asociado:{" "}
+          {benefitDisplayTitle(
+            {
+              kind: appt.benefit_kind as BenefitKind,
+              discount_percent: appt.benefit_discount_percent,
+              discount_amount: appt.benefit_discount_amount,
+            },
+            appt.service_name,
+          )}
         </p>
       ) : null}
       {necesitaAutorizacion ? (
@@ -294,7 +302,14 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
   function abrirMarcarAtendido(appt: Appointment) {
     setAtendidoAppt(appt);
     const sugerido = appt.benefit_kind
-      ? suggestedAmount(appt.benefit_kind as BenefitKind, appt.price_at_booking ?? null)
+      ? suggestedAmount(
+          {
+            kind: appt.benefit_kind as BenefitKind,
+            discount_percent: appt.benefit_discount_percent,
+            discount_amount: appt.benefit_discount_amount,
+          },
+          appt.price_at_booking ?? null,
+        )
       : (appt.price_at_booking ?? null);
     setImporteCobrado(sugerido != null ? String(sugerido) : "");
   }
@@ -602,8 +617,16 @@ function Agenda({ onCerrarSesion }: { onCerrarSesion: () => void }) {
                 </div>
                 {atendidoAppt.benefit_kind ? (
                   <p className="mt-1 text-xs font-semibold text-gold">
-                    Beneficio asociado: {BENEFIT_LABEL[atendidoAppt.benefit_kind as BenefitKind].title}.
-                    El importe sugerido ya lo contempla; ajustalo a lo que realmente cobres.
+                    Beneficio asociado:{" "}
+                    {benefitDisplayTitle(
+                      {
+                        kind: atendidoAppt.benefit_kind as BenefitKind,
+                        discount_percent: atendidoAppt.benefit_discount_percent,
+                        discount_amount: atendidoAppt.benefit_discount_amount,
+                      },
+                      atendidoAppt.service_name,
+                    )}
+                    . El importe sugerido ya lo contempla; ajustalo a lo que realmente cobres.
                   </p>
                 ) : null}
                 {atendidoAppt.price_at_booking != null ? (
